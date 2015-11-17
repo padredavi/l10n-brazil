@@ -38,12 +38,11 @@ class StockInvoiceOnShipping(models.TransientModel):
             journal_id = picking.fiscal_category_id.property_journal
             if not journal_id:
                 raise UserError(
-                    _('Invalid Journal!'), 
+                    _('Invalid Journal!'),
                     _('There is not journal defined for this company: %s in '
-                      'fiscal operation: %s !') % 
+                      'fiscal operation: %s !') %
                     (picking.company_id.name,
                      picking.fiscal_category_id.name))
-
             self.write({'journal_id': journal_id.id})
         result = super(StockInvoiceOnShipping, self).create_invoice()
         return result
