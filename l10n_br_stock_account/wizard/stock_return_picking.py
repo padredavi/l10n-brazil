@@ -88,7 +88,8 @@ class StockReturnPicking(models.TransientModel):
                     line_fiscal_category_id = (
                         move.origin_returned_move_id.
                         fiscal_category_id.refund_fiscal_category_id.id)
-                    kwargs.update({'fiscal_category_id': line_fiscal_category_id})
+                    kwargs.update(
+                        {'fiscal_category_id': line_fiscal_category_id})
 
                     self._fiscal_position_map(
                         {'value': {}}, **kwargs).get('value')
@@ -99,8 +100,6 @@ class StockReturnPicking(models.TransientModel):
                     }
                     line_values.update(self._fiscal_position_map(
                         {'value': {}}, **kwargs).get('value'))
-                    
-                    # TODO
                     write_move = move_obj.browse(move.id)
                     write_move.write(line_values)
 
