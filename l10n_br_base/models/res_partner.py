@@ -193,8 +193,12 @@ class ResPartnerBank(models.Model):
     _inherit = 'res.partner.bank'
 
     number = fields.Char(u'Número', size=10)
+    street = fields.Char('Street', size=128)
     street2 = fields.Char('Street2', size=128)
     district = fields.Char('Bairro', size=32)
+    state_id = fields.Many2one(
+        "res.country.state", 'Fed. State',
+        change_default=True, domain="[('country_id','=',country_id)]")
     l10n_br_city_id = fields.Many2one(
         'l10n_br_base.city', 'Municipio',
         domain="[('state_id','=',state_id)]")
