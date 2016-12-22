@@ -483,7 +483,7 @@ class AccountInvoice(models.Model):
     def action_number(self):
         # TODO: not correct fix but required a fresh values before reading it.
         self.write({})
-
+        values = {}
         for invoice in self:
             if invoice.issuer == '0':
                 sequence_obj = self.env['ir.sequence']
@@ -508,12 +508,17 @@ class AccountInvoice(models.Model):
                 date_time_invoice = (invoice.date_hour_invoice or
                                      fields.datetime.now())
                 date_in_out = invoice.date_in_out or fields.datetime.now()
-                self.write(
-                    {'internal_number': seq_number,
-                     'number': seq_number,
-                     'date_hour_invoice': date_time_invoice,
-                     'date_in_out': date_in_out}
-                )
+
+                values = {'internal_number': seq_number,
+                    'number': seq_number,
+                    'date_hour_invoice': date_time_invoice,
+                    'date_in_out': date_in_out}
+            else:
+                seq_number = invoice.internal_number
+                values = {'internal_number': seq_number,
+                    'number': seq_number}
+
+            self.write(values)
         return True
 
     @api.onchange('type')
@@ -564,7 +569,7 @@ class AccountInvoice(models.Model):
                     self, datetime.datetime.now())
             else:
                 if inv.issuer == '1':
-                    date_move = inv.date_in_out
+                    date_move = inv.date_in_out or inv.date_hour_invoice
                 else:
                     date_move = inv.date_hour_invoice
                 date_hour_invoice = fields.Datetime.context_timestamp(
