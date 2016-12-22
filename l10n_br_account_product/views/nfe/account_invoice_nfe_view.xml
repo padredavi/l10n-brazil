@@ -101,8 +101,8 @@
                         <group>
                             <field name="internal_number" attrs="{'readonly': [('issuer', '=', '0')], 'required': [('issuer', '=', '1')]}" />
                             <field name="date_invoice" invisible="1" on_change="onchange_payment_term_date_invoice(payment_term, date_invoice)"/>
-                            <field name="date_hour_invoice" string="Data Emissão"/>
-                            <field name="date_in_out" string="Data de Entrada/Saida"/>
+                            <field name="date_hour_invoice" string="Data Emissão" on_change="onchange_payment_term_date_invoice(payment_term, date_hour_invoice)"/>
+                            <field name="date_in_out" string="Data de Entrada/Saida" on_change="onchange_payment_term_date_invoice(payment_term, date_in_out)"/>
                             <field name="fiscal_category_id" domain="[('type','in',{'out_invoice': ['output'], 'out_refund': ['input'], 'in_refund': ['output'], 'in_invoice': ['input']}.get(type, [])),('fiscal_type','=','product')]" required="1"/>
                             <field name="fiscal_position" required="1" domain="[('fiscal_category_id', '=', fiscal_category_id)]" groups="base.group_extended,base.group_user"/>
                             <field name="ind_final" string="Operação com Consumidor final" attrs="{'required': [('nfe_version', '>', '3.00')]}"/>
