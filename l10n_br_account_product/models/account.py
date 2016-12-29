@@ -338,14 +338,17 @@ class AccountTax(models.Model):
                     1 + result_icmsst['taxes'][0]['amount_mva'])),
                 precision) - icms_st_base
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
-            icms_value_limit = round(
-                result_icms['taxes'][0]['total_base']
-                * result_icmsst['taxes'][0]['icms_st_perc_limit'],
-                precision)
-            if icms_value_limit:
-                result_icmsst['taxes'][0]['amount'] = round(
+            icms_st_value = round(
+                (icms_st_base * icms_st_percent) - icms_value, precision)
+            if icms_value_limit and icms_st_value < 0:
+                icms_value_limit = round(
+                    result_icms['taxes'][0]['total_base']
+                    * result_icmsst['taxes'][0]['icms_st_perc_limit'],
+                    precision)
+                icms_st_value = round(
                     (icms_st_base * icms_st_percent) - icms_value_limit,
                      precision)
+            result_icmsst['taxes'][0]['amount'] = icms_st_value
             result_icmsst['taxes'][0]['icms_st_percent'] = icms_st_percent
             result_icmsst['taxes'][0][
                 'icms_st_percent_reduction'] = icms_st_percent_reduction
