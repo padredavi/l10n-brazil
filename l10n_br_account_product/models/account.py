@@ -5,6 +5,7 @@
 import time
 
 from openerp import models, fields, api
+from openerp.addons import decimal_precision as dp
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
@@ -31,6 +32,9 @@ class AccountTaxTemplate(models.Model):
          ('2', 'Lista Positiva (valor)'), ('3', 'Lista Neutra (valor)'),
          ('4', 'Margem Valor Agregado (%)'), ('5', 'Pauta (valor)')],
         'Tipo Base ICMS ST', required=True, default='4')
+    icms_st_perc_limit = fields.Float(
+        'Limite para Crédito do ICMS Próprio',
+        digits=dp.get_precision('Account'), default=0.00)
 
 
 class AccountTax(models.Model):
@@ -48,6 +52,10 @@ class AccountTax(models.Model):
          ('2', 'Lista Positiva (valor)'), ('3', 'Lista Neutra (valor)'),
          ('4', 'Margem Valor Agregado (%)'), ('5', 'Pauta (valor)')],
         'Tipo Base ICMS ST', required=True, default='4')
+    icms_st_perc_limit = fields.Float(
+        'Limite para Crédito do ICMS Próprio',
+        digits=dp.get_precision('Account'), default=0.00)
+
 
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
                      precision, base_tax=0.0):
@@ -138,6 +146,7 @@ class AccountTax(models.Model):
             tax['base_reduction'] = tax_brw.base_reduction
             tax['amount_mva'] = tax_brw.amount_mva
             tax['tax_discount'] = tax_brw.base_code_id.tax_discount
+            tax['icms_st_perc_limit'] = tax_brw.icms_st_perc_limit
 
             if tax.get('domain') == 'icms':
                 tax['icms_base_type'] = tax_brw.icms_base_type
@@ -329,8 +338,19 @@ class AccountTax(models.Model):
                     1 + result_icmsst['taxes'][0]['amount_mva'])),
                 precision) - icms_st_base
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
-            result_icmsst['taxes'][0]['amount'] = round(
+            icms_st_value = round(
                 (icms_st_base * icms_st_percent) - icms_value, precision)
+            if icms_value_limit and icms_st_value < 0:
+                icms_value_limit = round(
+                    result_icms['taxes'][0]['total_base']
+                    * result_icmsst['taxes'][0]['icms_st_perc_limit'],
+                    precision)
+                icms_st_value = round(
+                    (icms_st_base * icms_st_percent) - icms_value_limit,
+                     precision)
+            result_icmsst['taxes'][0]['amount'] = icms_st_value
+
+            
             result_icmsst['taxes'][0]['icms_st_percent'] = icms_st_percent
             result_icmsst['taxes'][0][
                 'icms_st_percent_reduction'] = icms_st_percent_reduction
