@@ -340,7 +340,8 @@ class AccountTax(models.Model):
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
             icms_st_value = round(
                 (icms_st_base * icms_st_percent) - icms_value, precision)
-            if icms_value_limit and icms_st_value < 0:
+            if (result_icmsst['taxes'][0]['icms_st_perc_limit']
+                    and icms_st_value < 0):
                 icms_value_limit = round(
                     result_icms['taxes'][0]['total_base']
                     * result_icmsst['taxes'][0]['icms_st_perc_limit'],
