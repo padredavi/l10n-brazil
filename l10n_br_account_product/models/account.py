@@ -349,8 +349,6 @@ class AccountTax(models.Model):
                     (icms_st_base * icms_st_percent) - icms_value_limit,
                      precision)
             result_icmsst['taxes'][0]['amount'] = icms_st_value
-
-            
             result_icmsst['taxes'][0]['icms_st_percent'] = icms_st_percent
             result_icmsst['taxes'][0][
                 'icms_st_percent_reduction'] = icms_st_percent_reduction
