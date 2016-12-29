@@ -28,6 +28,7 @@
                     <page string="ICMS ST" attrs="{'invisible': [('domain', '!=', 'icmsst')]}">
                         <group>
                             <field name="icms_st_base_type"/>
+                            <field name="icms_st_perc_limit"/>
                         </group>
                     </page>
                     <page string="IPI" attrs="{'invisible': [('domain', '!=', 'ipi')]}">
@@ -60,6 +61,7 @@
                     <page string="ICMS ST" attrs="{'invisible': [('domain', '!=', 'icmsst')]}">
                         <group>
                             <field name="icms_st_base_type"/>
+                            <field name="icms_st_perc_limit"/>
                         </group>
                     </page>
                     <page string="IPI" attrs="{'invisible': [('domain', '!=', 'ipi')]}">
