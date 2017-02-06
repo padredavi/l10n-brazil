@@ -643,6 +643,13 @@ class AccountInvoice(models.Model):
         result['name'] = _('NF-e')
         return result
 
+    @api.onchange('date_hour_invoice', 'date_in_out')
+    def onchange_date_invoice(self):
+        self.ensure_one()
+        date_invoice = self.date_hour_invoice or self.date_in_out
+        self.date_invoice =  datetime.datetime.strptime(
+            date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+
 
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
