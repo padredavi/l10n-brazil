@@ -85,6 +85,9 @@ class ResPartner(models.Model):
             allow_cnpj_multi_ie = record.env['ir.config_parameter'].get_param(
                 'l10n_br_base_allow_cnpj_multi_ie', default=True)
 
+            allow_multi_ie = record.env['ir.config_parameter'].get_param(
+                'l10n_br_base_allow_multi_ie', default=True)
+
             if record.parent_id:
                 domain += [
                     ('id', 'not in', record.parent_id.ids),
@@ -98,17 +101,22 @@ class ResPartner(models.Model):
 
             # se encontrar CNPJ iguais
             if record.env['res.partner'].search(domain):
-
-                if allow_cnpj_multi_ie == u'True':
-                    for partner in record.env['res.partner'].search(domain):
-                        if (partner.inscr_est == record.inscr_est and
-                                not record.inscr_est):
-                            raise ValidationError(
-                                u'Já existe um parceiro cadastrado com esta '
-                                u'Inscrição Estadual !')
-                else:
+                if allow_cnpj_multi_ie == u'False':
                     raise ValidationError(
                         u'Já existe um parceiro cadastrado com este CNPJ !')
+
+            domain += [
+                ('inscr_est', '=', record.inscr_est),
+                ('id', '!=', record.id)
+            ]
+
+            # se encontrar IE iguais
+            if record.env['res.partner'].search(domain):
+                if allow_multi_ie == u'False':
+                    raise ValidationError(
+                        u'Já existe um parceiro cadastrado com '
+                        u'esta Inscrição Estadual !')
+
 
     @api.multi
     @api.constrains('cnpj_cpf', 'country_id')
