@@ -23,7 +23,6 @@ class AccountTax(models.Model):
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
                      precision):
         result = {'tax_discount': 0.0, 'taxes': []}
-
         for tax in taxes:
             if tax.get('type') == 'weight' and product:
                 product_read = self.pool.get('product.product').read(
@@ -41,6 +40,9 @@ class AccountTax(models.Model):
 
             if tax.get('tax_discount'):
                 result['tax_discount'] += tax['amount']
+
+            if tax.get('type') == 'fixed':
+                tax['amount'] = round(tax.get('percent'), precision)
 
             if tax['percent']:
                 tax['total_base'] = round(
