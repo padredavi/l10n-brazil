@@ -683,6 +683,15 @@ class AccountInvoiceLine(models.Model):
             self.discount_value = self.invoice_id.currency_id.round(
                 self.price_gross - taxes['total'])
 
+    fiscal_quantity = fields.Float(
+        string=u'Quantidade Tributária',
+        default=0.00,
+        digits=dp.get_precision('Account')
+    )
+    fiscal_uom_id = fields.Many2one(
+        comodel_name='product.uom',
+        string=u'Unidate tributária'
+    )
     code = fields.Char(
         u'Código do Produto', size=60)
     date_invoice = fields.Datetime(

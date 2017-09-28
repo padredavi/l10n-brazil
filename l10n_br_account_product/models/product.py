@@ -33,6 +33,11 @@ PRODUCT_ORIGIN = [
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
+    fiscal_uom_id = fields.Many2one(
+        comodel_name='product.uom',
+        string=u'Unidate tributária'
+    )
+
     fiscal_type = fields.Selection(
         selection_add=PRODUCT_FISCAL_TYPE,
         default=PRODUCT_FISCAL_TYPE_DEFAULT)

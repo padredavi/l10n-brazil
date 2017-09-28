@@ -175,6 +175,12 @@ class StockMove(models.Model):
         result['cfop_id'] = fiscal_position.cfop_id.id
         result['fiscal_category_id'] = fiscal_category_id.id
         result['fiscal_position'] = fiscal_position.id
+        result['fiscal_quantity'] = move.product_uom_qty
+
+        fiscal_uom_id = move.product_id.fiscal_uom_id or \
+            move.product_uom.id
+
+        result['fiscal_uom_id'] = fiscal_uom_id
 
         # TODO este código é um fix pq no core nao se copia os impostos
         ctx = dict(self.env.context)

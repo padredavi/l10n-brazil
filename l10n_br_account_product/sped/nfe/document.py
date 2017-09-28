@@ -352,8 +352,8 @@ class NFe200(FiscalDocument):
         self.det.prod.qCom.valor = str("%.4f" % invoice_line.quantity)
         self.det.prod.vUnCom.valor = str("%.7f" % invoice_line.price_unit)
         self.det.prod.vProd.valor = str("%.2f" % invoice_line.price_gross)
-        self.det.prod.uTrib.valor = self.det.prod.uCom.valor
-        self.det.prod.qTrib.valor = self.det.prod.qCom.valor
+        self.det.prod.uTrib.valor = invoice_line.fiscal_uom_id.name or ''
+        self.det.prod.qTrib.valor = str("%.4f" % invoice_line.fiscal_quantity)
         self.det.prod.vUnTrib.valor = self.det.prod.vUnCom.valor
         self.det.prod.vFrete.valor = str("%.2f" % invoice_line.freight_value)
         self.det.prod.vSeg.valor = str("%.2f" % invoice_line.insurance_value)
