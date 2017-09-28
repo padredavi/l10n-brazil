@@ -378,4 +378,12 @@ class SaleOrderLine(models.Model):
             line.order_id.fiscal_category_id.id or False
         result['fiscal_position'] = line.fiscal_position.id or \
             line.order_id.fiscal_position.id or False
+
+        result['fiscal_quantity'] = line.product_uom_qty
+
+        fiscal_uom_id = line.product_id.fiscal_uom_id or \
+            line.product_uom.id
+
+        result['fiscal_uom_id'] = fiscal_uom_id
+
         return result
