@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @ 2016 Akretion - www.akretion.com.br -
+# @ 2017 Akretion - www.akretion.com.br -
 #   Clément Mombereau <clement.mombereau@akretion.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
@@ -105,7 +105,8 @@ class ValidCreateIdTest(TransactionCase):
             'zip': '29161-695',
             'phone': '+55 27 2916-1695',
             'email': 'contact@partnertest.com.br',
-            'website': 'www.partnertest.com.br'}
+            'website': 'www.partnertest.com.br'
+            }
 
 #Tests on companies
 
