@@ -332,14 +332,20 @@ class NFe200(FiscalDocument):
 
         if invoice_line.product_id:
             self.det.prod.cProd.valor = invoice_line.product_id.code or ''
-            self.det.prod.cEAN.valor = invoice_line.product_id.ean13 or ''
-            self.det.prod.cEANTrib.valor = invoice_line.product_id.ean13 or ''
             self.det.prod.xProd.valor = (
                 invoice_line.product_id.name[:120] or '')
         else:
             self.det.prod.cProd.valor = invoice_line.code or ''
             self.det.prod.xProd.valor = invoice_line.name[:120] or ''
 
+        self.det.prod.cEAN.valor = (
+            invoice_line.uos_ean
+            or invoice_line.fiscal_uom_ean
+            or '')
+        self.det.prod.cEANTrib.valor = (
+            invoice_line.fiscal_uom_ean
+            or invoice_line.product_id.ean13
+            or '')
         self.det.prod.NCM.valor = punctuation_rm(
             invoice_line.fiscal_classification_id.code or '')[:8]
         self.det.prod.EXTIPI.valor = punctuation_rm(
@@ -354,7 +360,9 @@ class NFe200(FiscalDocument):
         self.det.prod.vProd.valor = str("%.2f" % invoice_line.price_gross)
         self.det.prod.uTrib.valor = invoice_line.fiscal_uom_id.name or ''
         self.det.prod.qTrib.valor = str("%.4f" % invoice_line.fiscal_quantity)
-        self.det.prod.vUnTrib.valor = self.det.prod.vUnCom.valor
+        self.det.prod.vUnTrib.valor = str(
+            "%.7f" % invoice_line.fiscal_price_unit
+            or self.det.prod.vUnCom.valor)
         self.det.prod.vFrete.valor = str("%.2f" % invoice_line.freight_value)
         self.det.prod.vSeg.valor = str("%.2f" % invoice_line.insurance_value)
         self.det.prod.vDesc.valor = str("%.2f" % invoice_line.discount_value)

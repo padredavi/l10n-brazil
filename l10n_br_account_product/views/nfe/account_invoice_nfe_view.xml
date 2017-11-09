@@ -365,12 +365,13 @@
                                         <field name="quantity" class="oe_inline"/>
                                         <field name="uos_id" class="oe_inline" groups="product.group_uom" on_change="uos_id_change(product_id, uos_id, quantity, name, parent.type, parent.partner_id, parent.fiscal_position, price_unit, parent.currency_id, parent.company_id, context)"/>
                                     </div>
+                                    <field name="price_unit"/>
                                     <label for="fiscal_quantity"/>
                                     <div>
                                         <field name="fiscal_quantity" class="oe_inline"/>
                                         <field name="fiscal_uom_id" class="oe_inline" groups="product.group_uom"/>
                                     </div>
-                                    <field name="price_unit"/>
+                                    <field name="fiscal_price_unit"/>
                                     <field name="discount"/>
                                     <field name="freight_value"/>
                                     <field name="insurance_value"/>
@@ -379,6 +380,8 @@
                                 <group>
                                     <field name="product_type" attrs="{'readonly': [('product_id','!=', False)]}"/>
                                     <field name="code" required="True" attrs="{'readonly': [('product_id','!=', False)]}"/>
+                                    <field name="uos_ean"/>
+                                    <field name="fiscal_uom_ean"/>
                                     <field name="fiscal_classification_id" required="True" attrs="{'readonly': [('product_id','!=', False)]}"/>
                                     <field name="cest_id" attrs="{'readonly': [('product_id','!=', False)]}"/>
                                     <field name="fci" attrs="{'readonly': [('product_id','!=', False)]}"/>

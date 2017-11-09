@@ -647,7 +647,7 @@ class AccountInvoice(models.Model):
     @api.onchange('date_hour_invoice', 'date_in_out')
     def onchange_date_invoice(self):
         self.ensure_one()
-        date_invoice = self.date_hour_invoice or self.date_in_out
+        date_invoice = (self.date_hour_invoice or self.date_in_out)
         self.date_invoice =  datetime.datetime.strptime(
             date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
@@ -683,14 +683,28 @@ class AccountInvoiceLine(models.Model):
             self.discount_value = self.invoice_id.currency_id.round(
                 self.price_gross - taxes['total'])
 
+    uos_ean = fields.Char(
+        string=u'EAN Comercial',
+        size=14
+    )
     fiscal_quantity = fields.Float(
         string=u'Quantidade Tributária',
         default=0.00,
         digits=dp.get_precision('Account')
     )
+    fiscal_price_unit = fields.Float(
+        string='Preço Unitário Tributável',
+        required=True,
+        digits=dp.get_precision('Product Price'),
+        default=0.00
+    )
     fiscal_uom_id = fields.Many2one(
         comodel_name='product.uom',
-        string=u'Unidate tributária'
+        string=u'Unidate Tributária'
+    )
+    fiscal_uom_ean = fields.Char(
+        string=u'EAN Tributário',
+        size=14
     )
     code = fields.Char(
         u'Código do Produto', size=60)
@@ -1151,6 +1165,10 @@ class AccountInvoiceLine(models.Model):
                 result['fci'] = product.fci
 
             result['code'] = product.default_code
+
+            result['uos_ean'] = values.get('uos_ean') or product.ean13
+            result['fiscal_uom_ean'] = product.ean13
+
             result['icms_origin'] = product.origin
 
         taxes_calculed = taxes.compute_all(

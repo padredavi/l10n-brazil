@@ -27,3 +27,4 @@ class SaleOrder(models.Model):
             result['incoterm'] = order.incoterm.id
 
         return result
+
