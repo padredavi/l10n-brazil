@@ -62,7 +62,11 @@ class AccountInvoice(models.Model):
         self.amount_tax = sum(tax.amount
                               for tax in self.tax_line
                               if not tax.tax_code_id.tax_discount)
-        self.amount_total = self.amount_tax + self.amount_untaxed
+        self.tax_amount_retention = sum(tax.amount
+                              for tax in self.tax_line
+                              if tax.tax_code_id.retention)
+        self.amount_total = (self.amount_tax + self.amount_untaxed -
+                             self.tax_amount_retention)
 
         for line in self.invoice_line:
             if line.icms_cst_id.code not in (
@@ -384,6 +388,11 @@ class AccountInvoice(models.Model):
     amount_costs = fields.Float(
         string='Outros Custos', store=True,
         digits=dp.get_precision('Account'), compute='_compute_amount')
+    tax_amount_retention = fields.Float(
+            string='Total de Retenções',
+            store=True,
+            digits=dp.get_precision('Account'),
+            compute='_compute_amount')
     amount_total_taxes = fields.Float(
         string='Total de Tributos',
         store=True,
@@ -650,6 +659,41 @@ class AccountInvoice(models.Model):
         date_invoice = (self.date_hour_invoice or self.date_in_out)
         self.date_invoice =  datetime.datetime.strptime(
             date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+
+    @api.multi
+    def compute_invoice_totals(self, company_currency, ref,
+                               invoice_move_lines):
+        result = super(AccountInvoice, self).compute_invoice_totals(
+            company_currency, ref, invoice_move_lines
+        )
+        if self.tax_amount_retention:
+            return self.amount_total * -1, self.amount_total * -1, result[2]
+        return result
+
+    @api.multi
+    def finalize_invoice_move_lines(self, move_lines):
+        # FIXME
+        result = super(AccountInvoice, self).finalize_invoice_move_lines(
+            move_lines)
+
+        receivable = []
+        retention = []
+        for m in result:
+            if m[2].get('tax_code_id'):
+                tax_code = self.env['account.tax.code'].browse(
+                    m[2].get('tax_code_id'))
+
+                if (tax_code.retention and m[2].get('account_id') !=
+                        self.account_id.id and m[2].get('debit') and
+                        m[2].get('tax_amount') != self.amount_total +
+                            self.tax_amount_retention):
+                    retention = m[2].copy()
+
+        retention['account_id'] = self.account_id.id
+        retention['credit'] = retention['debit']
+        retention['debit'] = 0.00
+        result.append((0, 0, retention))
+        return result
 
 
 class AccountInvoiceLine(models.Model):

@@ -17,6 +17,14 @@ class AccountTaxComputation(models.Model):
     name = fields.Char('Name', size=64)
 
 
+class AccountTaxCode(models.Model):
+    _inherit = 'account.tax.code'
+
+    retention = fields.Boolean(
+        string=u'Retention'
+    )
+
+
 class AccountTax(models.Model):
     _inherit = 'account.tax'
 
