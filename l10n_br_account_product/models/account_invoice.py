@@ -689,10 +689,11 @@ class AccountInvoice(models.Model):
                             self.tax_amount_retention):
                     retention = m[2].copy()
 
-        retention['account_id'] = self.account_id.id
-        retention['credit'] = retention['debit']
-        retention['debit'] = 0.00
-        result.append((0, 0, retention))
+            if retention:
+                retention['account_id'] = self.account_id.id
+                retention['credit'] = retention['debit']
+                retention['debit'] = 0.00
+                result.append((0, 0, retention))
         return result
 
 
@@ -712,7 +713,8 @@ class AccountInvoiceLine(models.Model):
             fiscal_position=self.fiscal_position,
             insurance_value=self.insurance_value,
             freight_value=self.freight_value,
-            other_costs_value=self.other_costs_value)
+            other_costs_value=self.other_costs_value,
+            price_unit_gross=self.price_unit)
         self.price_tax_discount = 0.0
         self.price_subtotal = 0.0
         self.price_gross = 0.0
@@ -1220,7 +1222,9 @@ class AccountInvoiceLine(models.Model):
             fiscal_position=fiscal_position,
             insurance_value=insurance_value,
             freight_value=freight_value,
-            other_costs_value=other_costs_value)
+            other_costs_value=other_costs_value,
+            price_unit_gross=price_unit
+            )
 
         result['total_taxes'] = taxes_calculed['total_taxes']
 
@@ -1589,7 +1593,8 @@ class AccountInvoiceTax(models.Model):
                 fiscal_position=line.fiscal_position,
                 insurance_value=line.insurance_value,
                 freight_value=line.freight_value,
-                other_costs_value=line.other_costs_value)['taxes']
+                other_costs_value=line.other_costs_value,
+                price_unit_gross=line.price_unit)['taxes']
             for tax in taxes:
                 val = {
                     'invoice_id': invoice.id,

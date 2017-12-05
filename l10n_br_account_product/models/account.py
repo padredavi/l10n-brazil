@@ -55,6 +55,10 @@ class AccountTax(models.Model):
     icms_st_perc_limit = fields.Float(
         'Limite para Crédito do ICMS Próprio',
         digits=dp.get_precision('Account'), default=0.00)
+    icms_st_discount_included = fields.Boolean(
+        string=u'Incluir desconto na base de calculo?',
+        default=False
+    )
 
 
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
@@ -100,7 +104,8 @@ class AccountTax(models.Model):
     def compute_all(self, cr, uid, taxes, price_unit, quantity,
                     product=None, partner=None, force_excluded=False,
                     fiscal_position=False, insurance_value=0.0,
-                    freight_value=0.0, other_costs_value=0.0, base_tax=0.0):
+                    freight_value=0.0, other_costs_value=0.0, base_tax=0.0,
+                    price_unit_gross=0.0):
         """Compute taxes
         Returns a dict of the form::
         {
@@ -132,6 +137,7 @@ class AccountTax(models.Model):
         ipi_value = 0.0
         calculed_taxes = []
         id_dest = u''
+
         if fiscal_position:
             id_dest = (fiscal_position.cfop_id and
                        fiscal_position.cfop_id.id_dest or False)
@@ -147,6 +153,8 @@ class AccountTax(models.Model):
             tax['amount_mva'] = tax_brw.amount_mva
             tax['tax_discount'] = tax_brw.base_code_id.tax_discount
             tax['icms_st_perc_limit'] = tax_brw.icms_st_perc_limit
+            tax['icms_st_discount_included'] = \
+                tax_brw.icms_st_discount_included
 
             if tax.get('domain') == 'icms':
                 tax['icms_base_type'] = tax_brw.icms_base_type
@@ -320,20 +328,29 @@ class AccountTax(models.Model):
         # Calcula ICMS ST
         specific_icmsst = [tx for tx in result['taxes']
                            if tx['domain'] == 'icmsst']
+
+        icms_st_prebase = result['total']
+        if specific_icmsst:
+            if specific_icmsst.get('icms_st_discount_included'):
+                p = price_unit_gross or price_unit
+                icms_st_prebase = round(quantity * p, precision)
+
         result_icmsst = self._compute_tax(cr, uid, specific_icmsst,
-                                          result['total'], product,
+                                          icms_st_prebase, product,
                                           quantity, precision, base_tax)
+
+
         totaldc += result_icmsst['tax_discount']
         if result_icmsst['taxes']:
             icms_st_percent = result_icmsst['taxes'][0]['percent']
             icms_st_percent_reduction = result_icmsst[
                 'taxes'][0]['base_reduction']
-            icms_st_base = round(((result['total'] + ipi_value) *
+            icms_st_base = round(((icms_st_prebase + ipi_value) *
                                  (1 - icms_st_percent_reduction)) *
                                  (1 + result_icmsst['taxes'][0]['amount_mva']),
                                  precision)
             icms_st_base_other = round(
-                ((result['total'] + ipi_value) * (
+                ((icms_st_prebase + ipi_value) * (
                     1 + result_icmsst['taxes'][0]['amount_mva'])),
                 precision) - icms_st_base
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
@@ -380,11 +397,15 @@ class AccountTax(models.Model):
     def compute_all(self, price_unit, quantity, product=None, partner=None,
                     force_excluded=False, fiscal_position=False,
                     insurance_value=0.0, freight_value=0.0,
-                    other_costs_value=0.0, base_tax=0.00):
+                    other_costs_value=0.0, base_tax=0.00,
+                    price_unit_gross=0.0):
         return self._model.compute_all(
             self._cr, self._uid, self, price_unit, quantity,
             product=product, partner=partner,
             force_excluded=force_excluded,
-            fiscal_position=fiscal_position, insurance_value=insurance_value,
-            freight_value=freight_value, other_costs_value=other_costs_value,
-            base_tax=base_tax)
+            fiscal_position=fiscal_position,
+            insurance_value=insurance_value,
+            freight_value=freight_value,
+            other_costs_value=other_costs_value,
+            base_tax=base_tax,
+            price_unit_gross=price_unit_gross)

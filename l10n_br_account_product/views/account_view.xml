@@ -62,6 +62,7 @@
                         <group>
                             <field name="icms_st_base_type"/>
                             <field name="icms_st_perc_limit"/>
+                            <field name="icms_st_discount_included"/>
                         </group>
                     </page>
                     <page string="IPI" attrs="{'invisible': [('domain', '!=', 'ipi')]}">

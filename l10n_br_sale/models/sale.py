@@ -350,7 +350,8 @@ class SaleOrderLine(models.Model):
         if uom != uos and product:
             product_obj = self.env['product.product'].browse(product)
             uos_obj = self.env['product.uom'].browse(uos)
-            result_super['value']['product_uom_qty'] = qty_uos * uos_obj.factor_inv
+            result_super['value']['product_uom_qty'] = (qty_uos *
+                                                        uos_obj.factor_inv)
             result_super['value']['product_uos'] = uos_obj.id
             result_super['value']['product_uos_qty'] = qty_uos
 
