@@ -331,7 +331,7 @@ class AccountTax(models.Model):
 
         icms_st_prebase = result['total']
         if specific_icmsst:
-            if specific_icmsst.get('icms_st_discount_included'):
+            if specific_icmsst[0].get('icms_st_discount_included'):
                 p = price_unit_gross or price_unit
                 icms_st_prebase = round(quantity * p, precision)
 
