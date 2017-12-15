@@ -196,7 +196,7 @@ class StockMove(models.Model):
 
         ctx['product_id'] = move.product_id.id
 
-        if inv_type in ('out_invoice', 'in_refund'):
+        if inv_type in ('out_invoice', 'out_refund'):
             ctx['type_tax_use'] = 'sale'
             taxes = move.product_id.taxes_id
         else:
