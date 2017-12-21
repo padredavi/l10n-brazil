@@ -664,10 +664,11 @@ class AccountInvoice(models.Model):
 
     @api.onchange('date_hour_invoice', 'date_in_out')
     def onchange_date_invoice(self):
-        self.ensure_one()
-        date_invoice = (self.date_hour_invoice or self.date_in_out)
-        self.date_invoice =  datetime.datetime.strptime(
-            date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+        for record in self:
+            if record.date_hour_invoice or record.date_in_out:
+                date_invoice = (record.date_hour_invoice or record.date_in_out)
+                record.date_invoice = datetime.strptime(
+                    date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @api.multi
     def compute_invoice_totals(self, company_currency, ref,
