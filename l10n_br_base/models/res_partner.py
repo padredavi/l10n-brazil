@@ -286,11 +286,6 @@ class OtherInscricoesEstaduais(models.Model):
 
     _sql_constraints = [
         ('other_inscricoes_estaduais_id_uniq',
-<<<<<<< HEAD
-         'unique (inscr_est, state_id)',
-         u'Inscrição Estadual já usada dentro do Estado!')
-=======
          'unique (state_id, partner_id)',
          u'O Parceiro já possui uma Inscrição Estadual para esse Estado!')
->>>>>>> origin/8.0-mais_de_uma_ie_por_empresa
     ]
