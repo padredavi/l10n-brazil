@@ -151,6 +151,9 @@
                                 <field name="icms_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="icms_st_base" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="icms_st_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="icms_fcp_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="icms_dest_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="icms_origin_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="ipi_base" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="ipi_base_other" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="ipi_value" widget="monetary" options="{'currency_field': 'currency_id'}"/>
