@@ -59,6 +59,10 @@ class AccountTax(models.Model):
         string=u'Incluir desconto na base de calculo?',
         default=False
     )
+    icms_st_by_percent = fields.Boolean(
+        string='ICMS por carga média',
+        default=False
+    )
 
 
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
@@ -151,6 +155,7 @@ class AccountTax(models.Model):
             tax['percent'] = tax_brw.amount
             tax['base_reduction'] = tax_brw.base_reduction
             tax['amount_mva'] = tax_brw.amount_mva
+            tax['icms_st_by_percent'] = tax_brw.icms_st_by_percent
             tax['tax_discount'] = tax_brw.base_code_id.tax_discount
             tax['icms_st_perc_limit'] = tax_brw.icms_st_perc_limit
             tax['icms_st_discount_included'] = \
@@ -345,26 +350,46 @@ class AccountTax(models.Model):
             icms_st_percent = result_icmsst['taxes'][0]['percent']
             icms_st_percent_reduction = result_icmsst[
                 'taxes'][0]['base_reduction']
-            icms_st_base = round(((icms_st_prebase + ipi_value) *
-                                 (1 - icms_st_percent_reduction)) *
-                                 (1 + result_icmsst['taxes'][0]['amount_mva']),
-                                 precision)
-            icms_st_base_other = round(
-                ((icms_st_prebase + ipi_value) * (
-                    1 + result_icmsst['taxes'][0]['amount_mva'])),
-                precision) - icms_st_base
-            result_icmsst['taxes'][0]['total_base'] = icms_st_base
-            icms_st_value = round(
-                (icms_st_base * icms_st_percent) - icms_value, precision)
-            if (result_icmsst['taxes'][0]['icms_st_perc_limit']
-                    and icms_st_value < 0):
-                icms_value_limit = round(
-                    result_icms['taxes'][0]['total_base']
-                    * result_icmsst['taxes'][0]['icms_st_perc_limit'],
-                    precision)
+            if not result_icmsst['taxes'][0]['icms_st_by_percent']:
+
+                icms_st_base = round(((icms_st_prebase + ipi_value) *
+                                     (1 - icms_st_percent_reduction)) *
+                                     (1 + result_icmsst['taxes'][0]['amount_mva']),
+                                     precision)
+                icms_st_base_other = round(
+                    ((icms_st_prebase + ipi_value) * (
+                        1 + result_icmsst['taxes'][0]['amount_mva'])),
+                    precision) - icms_st_base
                 icms_st_value = round(
-                    (icms_st_base * icms_st_percent) - icms_value_limit,
-                     precision)
+                    (icms_st_base * icms_st_percent) - icms_value, precision)
+                if (result_icmsst['taxes'][0]['icms_st_perc_limit']
+                        and icms_st_value < 0):
+                    icms_value_limit = round(
+                        result_icms['taxes'][0]['total_base']
+                        * result_icmsst['taxes'][0]['icms_st_perc_limit'],
+                        precision)
+                    icms_st_value = round(
+                        (icms_st_base * icms_st_percent) - icms_value_limit,
+                         precision)
+
+            if result_icmsst['taxes'][0]['icms_st_by_percent']:
+
+                total_base_st = (total_base + ii_value + ipi_value +
+                         pis_value + cofins_value)
+
+                icms_st_value = round(total_base_st *
+                                      result_icmsst['taxes'][0]['amount_mva'],
+                                      precision)
+
+                icms_st_base = round((icms_st_value + icms_value) /
+                                       icms_st_percent, precision)
+
+                icms_st_base_other = 0.00
+
+                result_icmsst['taxes'][0]['amount_mva'] = (
+                    icms_st_base - total_base_st) / total_base_st
+
+            result_icmsst['taxes'][0]['total_base'] = icms_st_base
             result_icmsst['taxes'][0]['amount'] = icms_st_value
             result_icmsst['taxes'][0]['icms_st_percent'] = icms_st_percent
             result_icmsst['taxes'][0][
