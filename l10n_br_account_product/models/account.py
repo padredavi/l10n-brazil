@@ -373,9 +373,8 @@ class AccountTax(models.Model):
                          precision)
 
             if result_icmsst['taxes'][0]['icms_st_by_percent']:
-
-                total_base_st = (total_base + ii_value + ipi_value +
-                         pis_value + cofins_value)
+                import pudb; pudb.set_trace()
+                total_base_st = (total_base + ipi_value)
 
                 icms_st_value = round(total_base_st *
                                       result_icmsst['taxes'][0]['amount_mva'],
@@ -385,9 +384,6 @@ class AccountTax(models.Model):
                                        icms_st_percent, precision)
 
                 icms_st_base_other = 0.00
-
-                result_icmsst['taxes'][0]['amount_mva'] = (
-                    icms_st_base - total_base_st) / total_base_st
 
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
             result_icmsst['taxes'][0]['amount'] = icms_st_value
