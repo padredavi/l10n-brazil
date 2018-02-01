@@ -310,6 +310,8 @@ class NFe200(FiscalDocument):
                     self.nfe.infNFe.dest.CPF.valor = punctuation_rm(
                         invoice.partner_id.cnpj_cpf)
 
+        self.nfe.infNFe.dest.ISUF.valor = invoice.partner_id.suframa or ''
+
         self.nfe.infNFe.dest.indIEDest.valor = \
             invoice.partner_id.partner_fiscal_type_id.ind_ie_dest
 
