@@ -272,11 +272,19 @@ class AccountTax(models.Model):
         # Calcula ICMS Interestadual (DIFAL)
         specific_icms_inter = [tx for tx in result['taxes']
                                if tx['domain'] == 'icmsinter']
+
+        # Retira o ICMS próprio e calcula o ICMS de Destino na BC
+        total_base_difal = 0.00
+        if specific_icms_inter:
+            total_base_difal = round(
+                (total_base - icms_value) / 
+                (1 -  specific_icms_inter[0]['percent']), precision)
+
         result_icms_inter = self._compute_tax(
             cr,
             uid,
             specific_icms_inter,
-            total_base,
+            total_base_difal,
             product,
             quantity,
             precision,
@@ -373,7 +381,6 @@ class AccountTax(models.Model):
                          precision)
 
             if result_icmsst['taxes'][0]['icms_st_by_percent']:
-                import pudb; pudb.set_trace()
                 total_base_st = (total_base + ipi_value)
 
                 icms_st_value = round(total_base_st *
