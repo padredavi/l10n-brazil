@@ -278,7 +278,7 @@ class AccountTax(models.Model):
 
         if specific_icms_inter:
             total_base_difal = round(
-                (total_base + ipi_value) / 
+                (total_base) / 
                 (1 -  specific_icms_inter[0]['percent']), precision)
 
         result_icms_inter = self._compute_tax(
