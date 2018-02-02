@@ -275,9 +275,10 @@ class AccountTax(models.Model):
 
         # Retira o ICMS próprio e calcula o ICMS de Destino na BC
         total_base_difal = 0.00
+
         if specific_icms_inter:
             total_base_difal = round(
-                (total_base - icms_value) / 
+                (total_base + ipi_value) / 
                 (1 -  specific_icms_inter[0]['percent']), precision)
 
         result_icms_inter = self._compute_tax(
@@ -294,11 +295,14 @@ class AccountTax(models.Model):
                 partner.partner_fiscal_type_id.ind_ie_dest == '9'):
             if id_dest == '2':
 
+                icms_value_difal = round(total_base_difal *
+                    specific_icms[0]['amount'], precision)
+
                 # Calcula o DIFAL total
                 result_icms_inter['taxes'][0]['amount'] = round(
-                    abs(specific_icms_inter[0]['amount'] -
-                        icms_value), precision
-                )
+                    abs((total_base_difal * specific_icms[0]['percent']) -
+                    (total_base_difal * specific_icms_inter[0]['percent'])),
+                    precision)
 
                 # Cria uma chave com o ICMS de intraestadual
                 result_icms_inter['taxes'][0]['icms_origin_percent'] = \
