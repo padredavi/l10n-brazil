@@ -93,7 +93,7 @@
                             <field name="issuer" attrs="{'invisible': [('type', '=', 'out_invoice')]}" />
                             <field name="partner_id"
                                 on_change="onchange_partner_id(type, partner_id, date_invoice, payment_term, partner_bank_id, company_id, context)"
-                                context="{'search_default_customer':1, 'show_address': 1, 'fiscal_category_id': fiscal_category_id}"
+                                context="{'search_default_customer':1, 'show_address': 1, 'fiscal_category_id': fiscal_category_id, 'partner_shipping_id': partner_shipping_id}"
                                 options='{"always_reload": True}'/>
                             <field name="partner_shipping_id" domain="[('parent_id', '=', partner_id)]"
                                 context="{'default_type':'delivery', 'show_address': 1}"/>
@@ -124,7 +124,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id"
                                         domain="[('fiscal_type', '=', 'product')]"
-                                        on_change="product_id_change(product_id, uos_id, quantity, name, parent.type, parent.partner_id, parent.fiscal_position, price_unit, parent.currency_id, parent.company_id, context)" context_br="{'parent_fiscal_category_id': parent.fiscal_category_id, 'parent_fiscal_position': parent.fiscal_position}"/>
+                                        on_change="product_id_change(product_id, uos_id, quantity, name, parent.type, parent.partner_id, parent.fiscal_position, price_unit, parent.currency_id, parent.company_id, context)" context_br="{'parent_fiscal_category_id': parent.fiscal_category_id, 'parent_fiscal_position': parent.fiscal_position, 'partner_shipping_id': parent.partner_shipping_id}"/>
                                     <field name="name"/>
                                     <field name="company_id" invisible="1"/>
                                     <field name="fiscal_category_id" invisible="1"/>

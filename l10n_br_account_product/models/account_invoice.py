@@ -433,6 +433,9 @@ class AccountInvoice(models.Model):
         if ctx.get('fiscal_category_id'):
             kwargs['fiscal_category_id'] = ctx.get('fiscal_category_id')
 
+        if ctx.get('partner_shipping_id'):
+            kwargs['partner_shipping_id'] = ctx.get('fiscal_category_id')
+
         if not kwargs.get('fiscal_category_id'):
             return result
 
@@ -565,6 +568,7 @@ class AccountInvoice(models.Model):
                 'company_id': self.company_id.id,
                 'partner_id': self.partner_id.id,
                 'partner_invoice_id': self.partner_id.id,
+                'partner_shipping_id': self.partner_shipping_id.id,
                 'fiscal_category_id': self.fiscal_category_id.id,
                 'context': self.env.context
             }
