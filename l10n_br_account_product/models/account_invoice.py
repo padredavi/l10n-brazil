@@ -1285,6 +1285,9 @@ class AccountInvoiceLine(models.Model):
         if product_fiscal_category_id:
             kwargs['fiscal_category_id'] = product_fiscal_category_id
 
+        if ctx.get('partner_shipping_id'):
+            kwargs['partner_shipping_id'] = ctx.get('partner_shipping_id')
+
         result_rule = obj_fp_rule.with_context(ctx).apply_fiscal_mapping(
             result, **kwargs)
         result_rule['value']['fiscal_category_id'] = \
@@ -1371,6 +1374,7 @@ class AccountInvoiceLine(models.Model):
                 'company_id': company_id,
                 'partner_id': partner_id,
                 'partner_invoice_id': self.invoice_id.partner_id.id,
+                'partner_shipping_id': self.invoice_id.partner_shipping_id.id,
                 'product_id': self.product_id.id,
                 'fiscal_category_id': self.fiscal_category_id.id,
                 'context': ctx
