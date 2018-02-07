@@ -18,5 +18,5 @@ from . import account_invoice_tax
 from . import account_payment_term
 from . import account_tax_template
 from . import account_tax
-from . import product
+from . import product_template
 from . import res_country
