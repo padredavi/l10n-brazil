@@ -42,13 +42,16 @@ class AccountInvoice(models.Model):
 
     @api.model
     def _default_fiscal_document(self):
-        invoice_fiscal_type = self.env.context.get('fiscal_type', 'product')
+        invoice_fiscal_type = self.env.context.get('fiscal_type', None)
         if invoice_fiscal_type in ('product', 'service'):
             fiscal_invoice_id = invoice_fiscal_type + '_invoice_id'
 
             company = self.env['res.company'].browse(
                 self.env.user.company_id.id)
-            return company[fiscal_invoice_id]
+
+        else:
+            return False
+        return company[fiscal_invoice_id]
 
     @api.model
     def _default_fiscal_document_serie(self):
