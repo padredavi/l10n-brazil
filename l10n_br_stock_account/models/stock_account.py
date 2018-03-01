@@ -61,6 +61,7 @@ class StockPicking(models.Model):
 
         result['comment'] = comment
         result['fiscal_category_id'] = picking.fiscal_category_id.id
+        result['journal_id'] = picking.fiscal_category_id.property_journal.id
         result['fiscal_position'] = picking.fiscal_position.id
 
         if picking.fiscal_category_id.journal_type in ('sale_refund',
