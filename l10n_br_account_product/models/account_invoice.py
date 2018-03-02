@@ -690,7 +690,6 @@ class AccountInvoice(models.Model):
         result = super(AccountInvoice, self).finalize_invoice_move_lines(
             move_lines)
 
-        import pudb; pudb.set_trace()
         receivable = []
         retention = []
         retentions = []
