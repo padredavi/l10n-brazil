@@ -690,8 +690,10 @@ class AccountInvoice(models.Model):
         result = super(AccountInvoice, self).finalize_invoice_move_lines(
             move_lines)
 
+        import pudb; pudb.set_trace()
         receivable = []
         retention = []
+        retentions = []
         for m in result:
             if m[2].get('tax_code_id'):
                 tax_code = self.env['account.tax.code'].browse(
@@ -703,11 +705,13 @@ class AccountInvoice(models.Model):
                             self.tax_amount_retention):
                     retention = m[2].copy()
 
-            if retention:
-                retention['account_id'] = self.account_id.id
-                retention['credit'] = retention['debit']
-                retention['debit'] = 0.00
-                result.append((0, 0, retention))
+                    if retention:
+                        retention['account_id'] = self.account_id.id
+                        retention['credit'] = retention['debit']
+                        retention['debit'] = 0.00
+                        retentions.append((0, 0, retention))
+
+        result += retentions
         return result
 
 

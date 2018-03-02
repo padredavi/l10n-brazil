@@ -23,6 +23,13 @@ class AccountTaxCode(models.Model):
     retention = fields.Boolean(
         string=u'Retention'
     )
+    partne_id = fields.Many2one(
+        comodel_name='res.partner'
+        string=u'Parceiro'
+    )
+    due_day = fields.Integer(
+        string=u'Dia do Mês'
+    )
 
 
 class AccountTax(models.Model):
