@@ -705,6 +705,22 @@ class AccountInvoice(models.Model):
                     retention = m[2].copy()
 
                     if retention:
+                        if tax_code.partner_id:
+                            retention['partner_id'] = tax_code.partner_id.id
+
+                        if tax_code.due_day:
+                            now = datetime.now()
+                            if tax_code.due_day > now.day:
+                                date = datetime(now.year,
+                                                now.month,
+                                                tax_code.due_day)
+                            else:
+                                date = datetime(now.year,
+                                                now.month + 1,
+                                                tax_code.due_day)
+
+                        retention['date_maturity'] = fields.Date.to_string(
+                            date)
                         retention['account_id'] = self.account_id.id
                         retention['credit'] = retention['debit']
                         retention['debit'] = 0.00
