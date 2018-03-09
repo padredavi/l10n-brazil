@@ -135,6 +135,10 @@ class PurchaseOrder(models.Model):
         result['partner_id'] = order_line.partner_id.id
         result['company_id'] = order_line.company_id.id
 
+        result['fiscal_quantity'] = order_line.product_qty
+        result['fiscal_uom_id'] = order_line.product_uom.id
+        result['fiscal_price_unit'] = order_line.price_unit
+
         return result
 
     @api.model

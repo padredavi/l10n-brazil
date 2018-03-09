@@ -186,6 +186,8 @@ class StockMove(models.Model):
         if move.procurement_id.sale_line_id:
             result['fiscal_price_unit'] = (
                 move.procurement_id.sale_line_id.price_unit)
+        else:
+            result['fiscal_price_unit'] = move.price_unit
 
         # TODO este código é um fix pq no core nao se copia os impostos
         ctx = dict(self.env.context)
