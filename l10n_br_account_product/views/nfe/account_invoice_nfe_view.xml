@@ -11,7 +11,7 @@
                     <filter name="draft" string="Provisorio" domain="[('state','=','draft')]" help="Draft Invoices"/>
                     <filter name="proforma" string="Proforma" domain="[('state','=','proforma2')]" help="Proforma Invoices" groups="account.group_proforma_invoices"/>
                     <filter icon="terp-check" string="Exportada Receita" domain="[('state','=','sefaz_export')]" />
-                    <filter name="invoices" string="Invoices" domain="[('state','not in',['draft','cancel'])]" help="Proforma/Open/Paid Invoices"/>
+                    <filter name="invoices" string="Invoices" domain="[('state','not in',['draft','cancel', 'sefaz_cancelled', 'sefaz_denied'])]" help="Proforma/Open/Paid Invoices"/>
                     <filter name="unpaid" string="Unpaid" domain="[('state','=','open')]" help="Unpaid Invoices"/>
                     <filter name="customer" string="Customer" domain="[('type','in',('out_invoice','out_refund'))]" help="Only show Client Invoices."/>
                     <filter name="supplier" string="Supplier" domain="[('type','in',('in_invoice','in_refund'))]" help="Only show Supplier Invoices."/>
@@ -26,6 +26,7 @@
                         <filter string="Salesperson" context="{'group_by':'user_id'}"/>
                         <filter string="Status" context="{'group_by':'state'}"/>
                         <filter string="Tipo de Documento" context="{'group_by':'type'}"/>
+                        <filter string="Categoria Fiscal" context="{'group_by':'fiscal_category_id'}"/>
                         <separator/>
                         <filter string="Period" context="{'group_by':'period_id'}"/>
                         <filter string="Due Month" context="{'group_by':'date_due'}"/>
