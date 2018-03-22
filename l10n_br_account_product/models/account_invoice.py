@@ -690,43 +690,47 @@ class AccountInvoice(models.Model):
         result = super(AccountInvoice, self).finalize_invoice_move_lines(
             move_lines)
 
-        receivable = []
-        retention = []
-        retentions = []
-        for m in result:
-            if m[2].get('tax_code_id'):
-                tax_code = self.env['account.tax.code'].browse(
-                    m[2].get('tax_code_id'))
+        for invoice in self:
+            retentions = []
+            for tax in invoice.tax_line:
+                retention = {}
+                if tax.tax_code_id.retention:
+                    retention = {
+                        'analytic_account_id': False,
+                        'tax_code_id': tax.tax_code_id.id,
+                        'tax_amount': 0,
+                        'name': tax.name,
+                        'ref': invoice.name,
+                        'currency_id': False,
+                        'credit': tax.amount,
+                        'debit': 0.0,
+                        'date_maturity': False,
+                        'date': '2018-03-15',
+                        'amount_currency': 0,
+                        'product_uom_id': 1,
+                        'partner_id': False,
+                        'account_id': (tax.account_id.id or
+                                       invoice.account_id.id)
+                    }
 
-                if (tax_code.retention and m[2].get('account_id') !=
-                        self.account_id.id and m[2].get('debit') and
-                        m[2].get('tax_amount') != self.amount_total +
-                            self.tax_amount_retention):
-                    retention = m[2].copy()
+                    if tax.tax_code_id.partner_id:
+                        retention['partner_id'] = tax.tax_code_id.partner_id.id
 
-                    if retention:
-                        if tax_code.partner_id:
-                            retention['partner_id'] = tax_code.partner_id.id
+                    if tax.tax_code_id.due_day:
+                        now = datetime.now()
+                        if tax.tax_code_id.due_day > now.day:
+                            date = datetime(now.year,
+                                            now.month,
+                                            tax.tax_code_id.due_day)
+                        else:
+                            date = datetime(now.year,
+                                            now.month + 1,
+                                            tax.tax_code_id.due_day)
 
-                        if tax_code.due_day:
-                            now = datetime.now()
-                            if tax_code.due_day > now.day:
-                                date = datetime(now.year,
-                                                now.month,
-                                                tax_code.due_day)
-                            else:
-                                date = datetime(now.year,
-                                                now.month + 1,
-                                                tax_code.due_day)
+                    retention['date_maturity'] = fields.Date.to_string(date)
+                    retentions.append((0, 0, retention))
 
-                        retention['date_maturity'] = fields.Date.to_string(
-                            date)
-                        retention['account_id'] = self.account_id.id
-                        retention['credit'] = retention['debit']
-                        retention['debit'] = 0.00
-                        retentions.append((0, 0, retention))
-
-        result += retentions
+            result += retentions
         return result
 
 
