@@ -834,3 +834,9 @@ class NFe310(NFe200):
             raise UserError(
                 _(u'Erro!'), _(u"Biblioteca PySPED não instalada!"))
         return AutXML_310()
+
+
+class NFe400(NFe310):
+    def __init__(self):
+        super(NFe400, self).__init__()
+
