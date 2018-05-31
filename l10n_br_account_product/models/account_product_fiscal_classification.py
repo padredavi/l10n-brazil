@@ -326,9 +326,9 @@ class AccountProductFiscalClassification(models.Model):
         if ('purchase_tax_definition_line' in vals or
                 'sale_tax_definition_line' in vals):
             for fc in self:
-                # pt_lst = pt_obj.browse([x.id for x in fc.product_tmpl_ids])
-                # for pt in pt_lst:
-                fc.product_tmpl_ids.write({'fiscal_classification_id': fc.id})
+                pt_lst = pt_obj.browse([x.id for x in fc.product_tmpl_ids])
+                for pt in pt_lst:
+                    pt.write({'fiscal_classification_id': fc.id})
         return res
 
 
