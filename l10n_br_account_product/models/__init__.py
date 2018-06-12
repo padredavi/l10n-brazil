@@ -11,5 +11,4 @@ from . import account_invoice
 from . import account
 from . import product
 from . import res_country
-from . import account_payment
 from . import res_config

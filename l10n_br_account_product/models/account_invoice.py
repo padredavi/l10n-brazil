@@ -165,9 +165,8 @@ class AccountInvoice(models.Model):
         'Série NF Entrada', size=12, readonly=True,
         states={'draft': [('readonly', False)]},
         help=u"Série do número da Nota Fiscal do Fornecedor")
-    nfe_version = fields.Selection([
-        ('1.10', '1.10'), ('2.00', '2.00'),
-        ('3.10', '3.10'), ('4.00', '4.00')],
+    nfe_version = fields.Selection(
+        [('1.10', '1.10'), ('2.00', '2.00'), ('3.10', '3.10')],
         u'Versão NFe', readonly=True, default=_default_nfe_version,
         states={'draft': [('readonly', False)]})
     date_hour_invoice = fields.Datetime(
@@ -399,26 +398,6 @@ class AccountInvoice(models.Model):
         store=True,
         digits=dp.get_precision('Account'),
         compute='_compute_amount')
-    type_nf_payment = fields.Selection([
-        ('01', u'01 - Dinheiro'),
-        ('02', u'02 - Cheque'),
-        ('03', u'03 - Cartão de Crédito'),
-        ('04', u'04 - Cartão de Débito'),
-        ('06', u'05 - Crédito Loja'),
-        ('10', u'10 - Vale Alimentação'),
-        ('11', u'11 - Vale Refeição'),
-        ('12', u'12 - Vale Presente'),
-        ('13', u'13 - Vale Combustível'),
-        ('14', u'14 - Duplicata Mercantil'),
-        ('15', u'15 - Boleto Bancário'),
-        ('90', u'90 - Sem pagamento'),
-        ('99', u'99 - Outros')
-    ], string='Tipo de Pagamento da NF', required=True,
-        help=u'Obrigatório o preenchimento do Grupo Informações de Pagamento'
-             u' para NF-e e NFC-e. Para as notas com finalidade de Ajuste'
-             u' ou Devolução o campo Forma de Pagamento deve ser preenchido'
-             u' com 90 - Sem Pagamento.'
-    )
 
     @api.one
     @api.constrains('number')
@@ -686,13 +665,6 @@ class AccountInvoice(models.Model):
         result = super(AccountInvoice, self).open_fiscal_document()
         result['name'] = _('NF-e')
         return result
-
-    @api.onchange('payment_mode_id')
-    def onchange_payment_mode(self):
-        for record in self:
-            if record.payment_mode_id:
-                record.type_nf_payment = \
-                    record.payment_mode_id.type_nf_payment
 
     @api.onchange('date_hour_invoice', 'date_in_out')
     def onchange_date_invoice(self):
