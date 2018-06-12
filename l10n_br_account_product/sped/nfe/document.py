@@ -261,7 +261,13 @@ class NFe200(FiscalDocument):
             str(company.phone or '').replace(' ', ''))
         self.nfe.infNFe.emit.IE.valor = punctuation_rm(
             invoice.company_id.partner_id.inscr_est)
-        self.nfe.infNFe.emit.IEST.valor = ''
+        for inscr_est_line in\
+                invoice.company_id.partner_id.other_inscr_est_lines:
+            if inscr_est_line.state_id.id == invoice.partner_id.state_id.id:
+                self.nfe.infNFe.emit.IEST.valor = punctuation_rm(
+                    inscr_est_line.inscr_est)
+            else:
+                self.nfe.infNFe.emit.IEST.valor = ''
         self.nfe.infNFe.emit.IM.valor = punctuation_rm(
             invoice.company_id.partner_id.inscr_mun or '')
         self.nfe.infNFe.emit.CRT.valor = invoice.company_id.fiscal_type or ''
@@ -321,6 +327,8 @@ class NFe200(FiscalDocument):
                     self.nfe.infNFe.dest.CPF.valor = punctuation_rm(
                         invoice.partner_id.cnpj_cpf)
 
+        self.nfe.infNFe.dest.ISUF.valor = invoice.partner_id.suframa or ''
+
         self.nfe.infNFe.dest.indIEDest.valor = \
             invoice.partner_id.partner_fiscal_type_id.ind_ie_dest
 
@@ -366,6 +374,14 @@ class NFe200(FiscalDocument):
                     invoice_line.name[:120] or '')
             ).encode('ASCII', 'ignore'))
 
+        self.det.prod.cEAN.valor = (
+            invoice_line.uos_ean
+            or invoice_line.fiscal_uom_ean
+            or '')
+        self.det.prod.cEANTrib.valor = (
+            invoice_line.fiscal_uom_ean
+            or invoice_line.product_id.ean13
+            or '')
         self.det.prod.NCM.valor = punctuation_rm(
             invoice_line.fiscal_classification_id.code or '')[:8]
         self.det.prod.EXTIPI.valor = punctuation_rm(
@@ -378,9 +394,11 @@ class NFe200(FiscalDocument):
         self.det.prod.qCom.valor = str("%.4f" % invoice_line.quantity)
         self.det.prod.vUnCom.valor = str("%.7f" % invoice_line.price_unit)
         self.det.prod.vProd.valor = str("%.2f" % invoice_line.price_gross)
-        self.det.prod.uTrib.valor = self.det.prod.uCom.valor
-        self.det.prod.qTrib.valor = self.det.prod.qCom.valor
-        self.det.prod.vUnTrib.valor = self.det.prod.vUnCom.valor
+        self.det.prod.uTrib.valor = invoice_line.fiscal_uom_id.name or ''
+        self.det.prod.qTrib.valor = str("%.4f" % invoice_line.fiscal_quantity)
+        self.det.prod.vUnTrib.valor = str(
+            "%.7f" % invoice_line.fiscal_price_unit
+            or self.det.prod.vUnCom.valor)
         self.det.prod.vFrete.valor = str("%.2f" % invoice_line.freight_value)
         self.det.prod.vSeg.valor = str("%.2f" % invoice_line.insurance_value)
         self.det.prod.vDesc.valor = str("%.2f" % invoice_line.discount_value)

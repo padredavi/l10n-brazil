@@ -61,6 +61,7 @@ class StockPicking(models.Model):
 
         result['comment'] = comment
         result['fiscal_category_id'] = picking.fiscal_category_id.id
+        result['journal_id'] = picking.fiscal_category_id.property_journal.id
         result['fiscal_position'] = picking.fiscal_position.id
 
         if picking.fiscal_category_id.journal_type in ('sale_refund',
@@ -175,6 +176,18 @@ class StockMove(models.Model):
         result['cfop_id'] = fiscal_position.cfop_id.id
         result['fiscal_category_id'] = fiscal_category_id.id
         result['fiscal_position'] = fiscal_position.id
+        result['fiscal_quantity'] = move.product_uom_qty
+
+        fiscal_uom_id = move.product_id.fiscal_uom_id or \
+            move.product_uom.id
+
+        result['fiscal_uom_id'] = fiscal_uom_id
+
+        if move.procurement_id.sale_line_id:
+            result['fiscal_price_unit'] = (
+                move.procurement_id.sale_line_id.price_unit)
+        else:
+            result['fiscal_price_unit'] = move.price_unit
 
         # TODO este código é um fix pq no core nao se copia os impostos
         ctx = dict(self.env.context)
@@ -186,7 +199,7 @@ class StockMove(models.Model):
 
         ctx['product_id'] = move.product_id.id
 
-        if inv_type in ('out_invoice', 'in_refund'):
+        if inv_type in ('out_invoice', 'out_refund'):
             ctx['type_tax_use'] = 'sale'
             taxes = move.product_id.taxes_id
         else:

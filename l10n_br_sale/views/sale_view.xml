@@ -18,7 +18,7 @@
         <record id="l10n_br_sale_order_form" model="ir.ui.view">
             <field name="name">l10n_br_sale.order.form</field>
             <field name="model">sale.order</field>
-            <field name="inherit_id" ref="sale.view_order_form" />
+            <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="priority">36</field>
             <field name="arch" type="xml">
                 <field name="note" position="before">

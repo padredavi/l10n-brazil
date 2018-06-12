@@ -346,6 +346,15 @@ class SaleOrderLine(models.Model):
             pricelist, product, qty, uom, qty_uos, uos, name, partner_id,
             lang, update_tax, date_order, packaging, fiscal_position, flag)
         result_super['value'].update(result['value'])
+
+        if uom != uos and product:
+            product_obj = self.env['product.product'].browse(product)
+            uos_obj = self.env['product.uom'].browse(uos)
+            result_super['value']['product_uom_qty'] = (qty_uos *
+                                                        uos_obj.factor_inv)
+            result_super['value']['product_uos'] = uos_obj.id
+            result_super['value']['product_uos_qty'] = qty_uos
+
         return result_super
 
     @api.onchange('fiscal_category_id', 'fiscal_position')
@@ -378,4 +387,16 @@ class SaleOrderLine(models.Model):
             line.order_id.fiscal_category_id.id or False
         result['fiscal_position'] = line.fiscal_position.id or \
             line.order_id.fiscal_position.id or False
+
+        result['fiscal_quantity'] = line.product_uom_qty
+
+        fiscal_uom_id = line.product_id.fiscal_uom_id or \
+            line.product_uom.id
+
+        result['fiscal_uom_id'] = fiscal_uom_id
+        result['fiscal_price_unit'] = line.price_unit
+        result['fiscal_uom_ean'] = line.product_id.ean13
+        result['uos_ean'] = (line.product_packaging.ean or
+                             line.product_id.ean13)
+
         return result

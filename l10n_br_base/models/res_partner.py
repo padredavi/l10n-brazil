@@ -55,6 +55,10 @@ class ResPartner(models.Model):
     cnpj_cpf = fields.Char('CNPJ/CPF', size=18)
 
     inscr_est = fields.Char('Inscr. Estadual/RG', size=16)
+    other_inscr_est_lines = fields.One2many(
+        'other.inscricoes.estaduais', 'partner_id',
+        string=u'Outras Inscrições Estaduais', ondelete='cascade'
+    )
 
     inscr_mun = fields.Char('Inscr. Municipal', size=18)
 
@@ -85,6 +89,9 @@ class ResPartner(models.Model):
             allow_cnpj_multi_ie = record.env['ir.config_parameter'].get_param(
                 'l10n_br_base_allow_cnpj_multi_ie', default=True)
 
+            allow_multi_ie = record.env['ir.config_parameter'].get_param(
+                'l10n_br_base_allow_multi_ie', default=True)
+
             if record.parent_id:
                 domain += [
                     ('id', 'not in', record.parent_id.ids),
@@ -98,17 +105,22 @@ class ResPartner(models.Model):
 
             # se encontrar CNPJ iguais
             if record.env['res.partner'].search(domain):
-
-                if allow_cnpj_multi_ie == u'True':
-                    for partner in record.env['res.partner'].search(domain):
-                        if (partner.inscr_est == record.inscr_est and
-                                not record.inscr_est):
-                            raise ValidationError(
-                                u'Já existe um parceiro cadastrado com esta '
-                                u'Inscrição Estadual !')
-                else:
+                if allow_cnpj_multi_ie == u'False':
                     raise ValidationError(
                         u'Já existe um parceiro cadastrado com este CNPJ !')
+
+            domain += [
+                ('inscr_est', '=', record.inscr_est),
+                ('id', '!=', record.id)
+            ]
+
+            # se encontrar IE iguais
+            if record.env['res.partner'].search(domain):
+                if allow_multi_ie == u'False':
+                    raise ValidationError(
+                        u'Já existe um parceiro cadastrado com '
+                        u'esta Inscrição Estadual !')
+
 
     @api.multi
     @api.constrains('cnpj_cpf', 'country_id')
@@ -191,6 +203,33 @@ class ResPartner(models.Model):
             cr, uid, context=context)
         return list(address_fields + ['l10n_br_city_id', 'number', 'district'])
 
+    @api.multi
+    @api.constrains('other_inscr_est_lines')
+    def _check_other_ie_lines(self):
+        """Checks if field other insc_est is valid,
+        this method call others methods because this validation is State wise
+        :Return: True or False.
+        """
+        for record in self:
+            for inscr_est_line in record.other_inscr_est_lines:
+                state_code = inscr_est_line.state_id.code or ''
+                uf = state_code.lower()
+                valid_ie = fiscal.validate_ie(uf, inscr_est_line.inscr_est)
+                if not valid_ie:
+                    raise ValidationError(u"Inscrição Estadual Invalida!")
+                if inscr_est_line.state_id.id == record.state_id.id:
+                    raise ValidationError(
+                        u"Somente pode existir uma Inscrição"
+                        u" Estadual por estado para cada Parceiro!")
+                duplicate_ie = record.search([
+                    ('state_id', '=', inscr_est_line.state_id.id),
+                    ('inscr_est', '=', inscr_est_line.inscr_est)
+                ])
+                if duplicate_ie:
+                    raise ValidationError(
+                        u"Inscrição Estadual já usada"
+                        u" por %s" % duplicate_ie.name)
+
 
 class ResPartnerBank(models.Model):
     """ Adiciona campos necessários para o cadastramentos de contas
@@ -232,3 +271,21 @@ class ResPartnerBank(models.Model):
         result['value']['district'] = partner.district
         result['value']['l10n_br_city_id'] = partner.l10n_br_city_id.id
         return result
+
+
+class OtherInscricoesEstaduais(models.Model):
+    _name = 'other.inscricoes.estaduais'
+
+    partner_id = fields.Many2one('res.partner')
+    inscr_est = fields.Char(
+        size=16, string='Inscr. Estadual', required=True
+    )
+    state_id = fields.Many2one(
+        'res.country.state', 'Estado', required=True
+    )
+
+    _sql_constraints = [
+        ('other_inscricoes_estaduais_id_uniq',
+         'unique (state_id, partner_id)',
+         u'O Parceiro já possui uma Inscrição Estadual para esse Estado!')
+    ]

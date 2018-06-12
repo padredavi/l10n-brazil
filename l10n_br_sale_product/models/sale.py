@@ -75,7 +75,8 @@ class SaleOrder(models.Model):
                 fiscal_position=line.fiscal_position,
                 insurance_value=line.insurance_value,
                 freight_value=line.freight_value,
-                other_costs_value=line.other_costs_value)['taxes']:
+                other_costs_value=line.other_costs_value,
+                price_unit_gross=line.price_unit)['taxes']:
             tax = self.env['account.tax'].browse(computed['id'])
             if not tax.tax_code_id.tax_discount:
                 value += computed.get('amount', 0.0)
@@ -230,7 +231,8 @@ class SaleOrderLine(models.Model):
             fiscal_position=self.fiscal_position,
             insurance_value=self.insurance_value,
             freight_value=self.freight_value,
-            other_costs_value=self.other_costs_value)
+            other_costs_value=self.other_costs_value,
+            price_unit_gross=self.price_unit)
 
         self.price_subtotal = (self.order_id.pricelist_id
                                .currency_id.round(taxes['total']))

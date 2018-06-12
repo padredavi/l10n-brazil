@@ -17,13 +17,27 @@ class AccountTaxComputation(models.Model):
     name = fields.Char('Name', size=64)
 
 
+class AccountTaxCode(models.Model):
+    _inherit = 'account.tax.code'
+
+    retention = fields.Boolean(
+        string=u'Retention'
+    )
+    partner_id = fields.Many2one(
+        comodel_name='res.partner',
+        string=u'Parceiro'
+    )
+    due_day = fields.Integer(
+        string=u'Dia do Mês'
+    )
+
+
 class AccountTax(models.Model):
     _inherit = 'account.tax'
 
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
                      precision):
         result = {'tax_discount': 0.0, 'taxes': []}
-
         for tax in taxes:
             if tax.get('type') == 'weight' and product:
                 product_read = self.pool.get('product.product').read(
@@ -41,6 +55,9 @@ class AccountTax(models.Model):
 
             if tax.get('tax_discount'):
                 result['tax_discount'] += tax['amount']
+
+            if tax.get('type') == 'fixed':
+                tax['amount'] = round(tax.get('percent'), precision)
 
             if tax['percent']:
                 tax['total_base'] = round(

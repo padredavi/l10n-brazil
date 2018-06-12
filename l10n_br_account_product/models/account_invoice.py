@@ -2,7 +2,7 @@
 # Copyright (C) 2013  Renato Lima - Akretion
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-import datetime
+from datetime import datetime
 
 from openerp import models, fields, api, _, tools
 from openerp.addons import decimal_precision as dp
@@ -62,7 +62,11 @@ class AccountInvoice(models.Model):
         self.amount_tax = sum(tax.amount
                               for tax in self.tax_line
                               if not tax.tax_code_id.tax_discount)
-        self.amount_total = self.amount_tax + self.amount_untaxed
+        self.tax_amount_retention = sum(tax.amount
+                              for tax in self.tax_line
+                              if tax.tax_code_id.retention)
+        self.amount_total = (self.amount_tax + self.amount_untaxed -
+                             self.tax_amount_retention)
 
         for line in self.invoice_line:
             if line.icms_cst_id.code not in (
@@ -385,6 +389,11 @@ class AccountInvoice(models.Model):
     amount_costs = fields.Float(
         string='Outros Custos', store=True,
         digits=dp.get_precision('Account'), compute='_compute_amount')
+    tax_amount_retention = fields.Float(
+            string='Total de Retenções',
+            store=True,
+            digits=dp.get_precision('Account'),
+            compute='_compute_amount')
     amount_total_taxes = fields.Float(
         string='Total de Tributos',
         store=True,
@@ -444,6 +453,9 @@ class AccountInvoice(models.Model):
         ctx.update({'use_domain': ('use_invoice', '=', True)})
         if ctx.get('fiscal_category_id'):
             kwargs['fiscal_category_id'] = ctx.get('fiscal_category_id')
+
+        if ctx.get('partner_shipping_id'):
+            kwargs['partner_shipping_id'] = ctx.get('fiscal_category_id')
 
         if not kwargs.get('fiscal_category_id'):
             return result
@@ -505,7 +517,7 @@ class AccountInvoice(models.Model):
     def action_number(self):
         # TODO: not correct fix but required a fresh values before reading it.
         self.write({})
-
+        values = {}
         for invoice in self:
             if invoice.issuer == '0':
                 sequence_obj = self.env['ir.sequence']
@@ -530,12 +542,17 @@ class AccountInvoice(models.Model):
                 date_time_invoice = (invoice.date_hour_invoice or
                                      fields.datetime.now())
                 date_in_out = invoice.date_in_out or fields.datetime.now()
-                self.write(
-                    {'internal_number': seq_number,
-                     'number': seq_number,
-                     'date_hour_invoice': date_time_invoice,
-                     'date_in_out': date_in_out}
-                )
+
+                values = {'internal_number': seq_number,
+                    'number': seq_number,
+                    'date_hour_invoice': date_time_invoice,
+                    'date_in_out': date_in_out}
+            else:
+                seq_number = invoice.internal_number
+                values = {'internal_number': seq_number,
+                    'number': seq_number}
+
+            self.write(values)
         return True
 
     @api.onchange('type')
@@ -572,6 +589,7 @@ class AccountInvoice(models.Model):
                 'company_id': self.company_id.id,
                 'partner_id': self.partner_id.id,
                 'partner_invoice_id': self.partner_id.id,
+                'partner_shipping_id': self.partner_shipping_id.id,
                 'fiscal_category_id': self.fiscal_category_id.id,
                 'context': self.env.context
             }
@@ -583,21 +601,30 @@ class AccountInvoice(models.Model):
         for inv in self:
             if not inv.date_hour_invoice:
                 date_hour_invoice = fields.Datetime.context_timestamp(
-                    self, datetime.datetime.now())
+                    self, datetime.now())
             else:
                 if inv.issuer == '1':
-                    date_move = inv.date_in_out
+                    date_move = inv.date_in_out or inv.date_hour_invoice
                 else:
                     date_move = inv.date_hour_invoice
                 date_hour_invoice = fields.Datetime.context_timestamp(
-                    self, datetime.datetime.strptime(
+                    self, datetime.strptime(
                         date_move, tools.DEFAULT_SERVER_DATETIME_FORMAT
                     )
                 )
             date_invoice = date_hour_invoice.strftime(
                 tools.DEFAULT_SERVER_DATE_FORMAT)
+
+            if (inv.company_id.date_used_maturity == 'invoice_out_date' and
+                    inv.type == 'out_invoice' and inv.date_in_out):
+                date_out = datetime.strptime(
+                    inv.date_in_out, '%Y-%m-%d %H:%M:%S')
+                date_invoice = date_out.strftime(
+                    tools.DEFAULT_SERVER_DATE_FORMAT)
+
             res = self.onchange_payment_term_date_invoice(
                 inv.payment_term.id, date_invoice)
+
             if res and res['value']:
                 res['value'].update({
                     'date_invoice': date_invoice
@@ -667,6 +694,73 @@ class AccountInvoice(models.Model):
                 record.type_nf_payment = \
                     record.payment_mode_id.type_nf_payment
 
+    @api.onchange('date_hour_invoice', 'date_in_out')
+    def onchange_date_invoice(self):
+        for record in self:
+            if record.date_hour_invoice or record.date_in_out:
+                date_invoice = (record.date_hour_invoice or record.date_in_out)
+                record.date_invoice = datetime.strptime(
+                    date_invoice, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+
+    @api.multi
+    def compute_invoice_totals(self, company_currency, ref,
+                               invoice_move_lines):
+        result = super(AccountInvoice, self).compute_invoice_totals(
+            company_currency, ref, invoice_move_lines
+        )
+        if self.tax_amount_retention:
+            return self.amount_total * -1, self.amount_total * -1, result[2]
+        return result
+
+    @api.multi
+    def finalize_invoice_move_lines(self, move_lines):
+        # FIXME
+        result = super(AccountInvoice, self).finalize_invoice_move_lines(
+            move_lines)
+
+        for invoice in self:
+            retentions = []
+            for tax in invoice.tax_line:
+                retention = {}
+                if tax.tax_code_id.retention:
+                    retention = {
+                        'analytic_account_id': False,
+                        'tax_code_id': tax.tax_code_id.id,
+                        'tax_amount': 0,
+                        'name': tax.name,
+                        'ref': invoice.name,
+                        'currency_id': False,
+                        'credit': tax.amount,
+                        'debit': 0.0,
+                        'date_maturity': False,
+                        'date': '2018-03-15',
+                        'amount_currency': 0,
+                        'product_uom_id': 1,
+                        'partner_id': False,
+                        'account_id': (tax.account_id.id or
+                                       invoice.account_id.id)
+                    }
+
+                    if tax.tax_code_id.partner_id:
+                        retention['partner_id'] = tax.tax_code_id.partner_id.id
+
+                    if tax.tax_code_id.due_day:
+                        now = datetime.now()
+                        if tax.tax_code_id.due_day > now.day:
+                            date = datetime(now.year,
+                                            now.month,
+                                            tax.tax_code_id.due_day)
+                        else:
+                            date = datetime(now.year,
+                                            now.month + 1,
+                                            tax.tax_code_id.due_day)
+
+                    retention['date_maturity'] = fields.Date.to_string(date)
+                    retentions.append((0, 0, retention))
+
+            result += retentions
+        return result
+
 
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
@@ -684,7 +778,8 @@ class AccountInvoiceLine(models.Model):
             fiscal_position=self.fiscal_position,
             insurance_value=self.insurance_value,
             freight_value=self.freight_value,
-            other_costs_value=self.other_costs_value)
+            other_costs_value=self.other_costs_value,
+            price_unit_gross=self.price_unit)
         self.price_tax_discount = 0.0
         self.price_subtotal = 0.0
         self.price_gross = 0.0
@@ -699,6 +794,29 @@ class AccountInvoiceLine(models.Model):
             self.discount_value = self.invoice_id.currency_id.round(
                 self.price_gross - taxes['total'])
 
+    uos_ean = fields.Char(
+        string=u'EAN Comercial',
+        size=14
+    )
+    fiscal_quantity = fields.Float(
+        string=u'Quantidade Tributária',
+        default=0.00,
+        digits=dp.get_precision('Account')
+    )
+    fiscal_price_unit = fields.Float(
+        string='Preço Unitário Tributável',
+        required=True,
+        digits=dp.get_precision('Product Price'),
+        default=0.00
+    )
+    fiscal_uom_id = fields.Many2one(
+        comodel_name='product.uom',
+        string=u'Unidate Tributária'
+    )
+    fiscal_uom_ean = fields.Char(
+        string=u'EAN Tributário',
+        size=14
+    )
     code = fields.Char(
         u'Código do Produto', size=60)
     date_invoice = fields.Datetime(
@@ -1158,6 +1276,10 @@ class AccountInvoiceLine(models.Model):
                 result['fci'] = product.fci
 
             result['code'] = product.default_code
+
+            result['uos_ean'] = values.get('uos_ean') or product.ean13
+            result['fiscal_uom_ean'] = product.ean13
+
             result['icms_origin'] = product.origin
 
         taxes_calculed = taxes.compute_all(
@@ -1165,7 +1287,9 @@ class AccountInvoiceLine(models.Model):
             fiscal_position=fiscal_position,
             insurance_value=insurance_value,
             freight_value=freight_value,
-            other_costs_value=other_costs_value)
+            other_costs_value=other_costs_value,
+            price_unit_gross=price_unit
+            )
 
         result['total_taxes'] = taxes_calculed['total_taxes']
 
@@ -1211,6 +1335,9 @@ class AccountInvoiceLine(models.Model):
 
         if product_fiscal_category_id:
             kwargs['fiscal_category_id'] = product_fiscal_category_id
+
+        if ctx.get('partner_shipping_id'):
+            kwargs['partner_shipping_id'] = ctx.get('partner_shipping_id')
 
         result_rule = obj_fp_rule.with_context(ctx).apply_fiscal_mapping(
             result, **kwargs)
@@ -1298,6 +1425,7 @@ class AccountInvoiceLine(models.Model):
                 'company_id': company_id,
                 'partner_id': partner_id,
                 'partner_invoice_id': self.invoice_id.partner_id.id,
+                'partner_shipping_id': self.invoice_id.partner_shipping_id.id,
                 'product_id': self.product_id.id,
                 'fiscal_category_id': self.fiscal_category_id.id,
                 'context': ctx
@@ -1534,7 +1662,8 @@ class AccountInvoiceTax(models.Model):
                 fiscal_position=line.fiscal_position,
                 insurance_value=line.insurance_value,
                 freight_value=line.freight_value,
-                other_costs_value=line.other_costs_value)['taxes']
+                other_costs_value=line.other_costs_value,
+                price_unit_gross=line.price_unit)['taxes']
             for tax in taxes:
                 val = {
                     'invoice_id': invoice.id,

@@ -17,9 +17,12 @@
 						</button>
 					</div>
 				</xpath>
-                <field name="type" position="after">
-                    <field name="fiscal_document_code" invisible="1"/>
-                </field>
+              <field name="type" position="after">
+                  <field name="fiscal_document_code" invisible="1"/>
+              </field>
+              <field name="amount_untaxed" position="after">
+                  <field name="tax_amount_retention" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+              </field>
             </field>
         </record>
 
@@ -40,6 +43,9 @@
 				</xpath>
                 <field name="type" position="after">
                     <field name="fiscal_document_code" invisible="1"/>
+                </field>
+                <field name="amount_untaxed" position="after">
+                    <field name="tax_amount_retention" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 </field>
             </field>
         </record>

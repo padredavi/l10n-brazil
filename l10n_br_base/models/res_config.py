@@ -13,6 +13,11 @@ class ResConfig(models.TransientModel):
         default=False,
     )
 
+    allow_multi_ie = fields.Boolean(
+        string=u'Permitir o cadastro de parceiros com IE iguais',
+        default=False,
+    )
+
     @api.model
     def get_default_allow_cnpj_multi_ie(self, field):
         return {
@@ -27,3 +32,18 @@ class ResConfig(models.TransientModel):
             self.env['ir.config_parameter'].set_param(
                 "l10n_br_base_allow_cnpj_multi_ie",
                 config.allow_cnpj_multi_ie or '')
+
+    @api.model
+    def get_default_allow_multi_ie(self, field):
+        return {
+            'allow_cnpj_multi_ie':
+            self.env["ir.config_parameter"].get_param(
+                "l10n_br_base_allow_multi_ie")
+        }
+
+    @api.multi
+    def set_allow_multi_ie(self):
+        for config in self:
+            self.env['ir.config_parameter'].set_param(
+                "l10n_br_base_allow_multi_ie",
+                config.allow_multi_ie or '')

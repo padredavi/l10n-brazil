@@ -5,6 +5,7 @@
 import time
 
 from openerp import models, fields, api
+from openerp.addons import decimal_precision as dp
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
@@ -31,6 +32,9 @@ class AccountTaxTemplate(models.Model):
          ('2', 'Lista Positiva (valor)'), ('3', 'Lista Neutra (valor)'),
          ('4', 'Margem Valor Agregado (%)'), ('5', 'Pauta (valor)')],
         'Tipo Base ICMS ST', required=True, default='4')
+    icms_st_perc_limit = fields.Float(
+        'Limite para Crédito do ICMS Próprio',
+        digits=dp.get_precision('Account'), default=0.00)
 
 
 class AccountTax(models.Model):
@@ -48,6 +52,18 @@ class AccountTax(models.Model):
          ('2', 'Lista Positiva (valor)'), ('3', 'Lista Neutra (valor)'),
          ('4', 'Margem Valor Agregado (%)'), ('5', 'Pauta (valor)')],
         'Tipo Base ICMS ST', required=True, default='4')
+    icms_st_perc_limit = fields.Float(
+        'Limite para Crédito do ICMS Próprio',
+        digits=dp.get_precision('Account'), default=0.00)
+    icms_st_discount_included = fields.Boolean(
+        string=u'Incluir desconto na base de calculo?',
+        default=False
+    )
+    icms_st_by_percent = fields.Boolean(
+        string='ICMS por carga média',
+        default=False
+    )
+
 
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
                      precision, base_tax=0.0):
@@ -92,7 +108,8 @@ class AccountTax(models.Model):
     def compute_all(self, cr, uid, taxes, price_unit, quantity,
                     product=None, partner=None, force_excluded=False,
                     fiscal_position=False, insurance_value=0.0,
-                    freight_value=0.0, other_costs_value=0.0, base_tax=0.0):
+                    freight_value=0.0, other_costs_value=0.0, base_tax=0.0,
+                    price_unit_gross=0.0):
         """Compute taxes
         Returns a dict of the form::
         {
@@ -123,6 +140,11 @@ class AccountTax(models.Model):
         totaldc = icms_value = 0.0
         ipi_value = 0.0
         calculed_taxes = []
+        id_dest = u''
+
+        if fiscal_position:
+            id_dest = (fiscal_position.cfop_id and
+                       fiscal_position.cfop_id.id_dest or False)
 
         for tax in result['taxes']:
             tax_list = [tx for tx in taxes if tx.id == tax['id']]
@@ -133,7 +155,11 @@ class AccountTax(models.Model):
             tax['percent'] = tax_brw.amount
             tax['base_reduction'] = tax_brw.base_reduction
             tax['amount_mva'] = tax_brw.amount_mva
+            tax['icms_st_by_percent'] = tax_brw.icms_st_by_percent
             tax['tax_discount'] = tax_brw.base_code_id.tax_discount
+            tax['icms_st_perc_limit'] = tax_brw.icms_st_perc_limit
+            tax['icms_st_discount_included'] = \
+                tax_brw.icms_st_discount_included
 
             if tax.get('domain') == 'icms':
                 tax['icms_base_type'] = tax_brw.icms_base_type
@@ -143,38 +169,89 @@ class AccountTax(models.Model):
 
         common_taxes = [tx for tx in result['taxes'] if tx[
             'domain'] not in ['icms', 'icmsst', 'ipi', 'icmsinter',
-                              'icmsfcp']]
+                              'icmsfcp', 'ii', 'pis', 'cofins']]
         result_tax = self._compute_tax(cr, uid, common_taxes, result['total'],
                                        product, quantity, precision, base_tax)
         totaldc += result_tax['tax_discount']
         calculed_taxes += result_tax['taxes']
 
+        # Adiciona frete seguro e outras despesas na base
+        total_base = (result['total'] + insurance_value + freight_value)
+
+        # Calcula o II
+        specific_ii = [tx for tx in result['taxes'] if tx['domain'] == 'ii']
+        result_ii = self._compute_tax(cr, uid, specific_ii, total_base,
+                                      product, quantity, precision, base_tax)
+        totaldc += result_ii['tax_discount']
+        calculed_taxes += result_ii['taxes']
+        ii_value = sum(ii['amount'] for ii in result_ii['taxes'])
+
         # Calcula o IPI
         specific_ipi = [tx for tx in result['taxes'] if tx['domain'] == 'ipi']
-        result_ipi = self._compute_tax(cr, uid, specific_ipi, result['total'],
+
+        if id_dest == '3':
+            base_ipi = total_base
+        else:
+            base_ipi = result['total']
+
+        result_ipi = self._compute_tax(cr, uid, specific_ipi, base_ipi,
                                        product, quantity, precision, base_tax)
         totaldc += result_ipi['tax_discount']
         calculed_taxes += result_ipi['taxes']
-        for ipi in result_ipi['taxes']:
-            ipi_value += ipi['amount']
+        ipi_value = sum(ipi['amount'] for ipi in result_ipi['taxes'])
+
+        # Calcula PIS e COFINS
+        specific_pis = [tx for tx in result['taxes']
+                        if tx['domain'] == 'pis']
+
+        specific_cofins = [tx for tx in result['taxes']
+                           if tx['domain'] == 'cofins']
+
+        if id_dest == '3':
+            base_pis_cofins = total_base - ii_value
+        else:
+            base_pis_cofins = result['total']
+
+        result_pis = self._compute_tax(cr, uid, specific_pis, base_pis_cofins,
+                                       product, quantity, precision, base_tax)
+
+        totaldc += result_pis['tax_discount']
+        calculed_taxes += result_pis['taxes']
+        pis_value = sum(pis['amount'] for pis in result_pis['taxes'])
+
+        result_cofins = self._compute_tax(cr, uid, specific_cofins,
+                                          base_pis_cofins, product, quantity,
+                                          precision, base_tax)
+
+        totaldc += result_cofins['tax_discount']
+        calculed_taxes += result_cofins['taxes']
+        cofins_value = sum(cofins['amount'] for
+                           cofins in result_cofins['taxes'])
 
         # Calcula ICMS
         specific_icms = [tx for tx in result['taxes']
                          if tx['domain'] == 'icms']
 
-        # Adiciona frete seguro e outras despesas na base do ICMS
-        total_base = (result['total'] + insurance_value +
-                      freight_value + other_costs_value)
-
         # Em caso de operação de ativo adiciona o IPI na base de ICMS
         if fiscal_position and fiscal_position.asset_operation:
             total_base += ipi_value
+
+        if id_dest == '3':
+            base_icms = (total_base + ii_value + ipi_value +
+                         pis_value + cofins_value)
+
+            # Calcupa o própio ICMS
+            if specific_icms:
+                base_icms = base_icms / (1 - specific_icms[0].get('percent'))
+
+        else:
+            base_icms = total_base
 
         result_icms = self._compute_tax(
             cr,
             uid,
             specific_icms,
-            total_base,
+            base_icms,
             product,
             quantity,
             precision,
@@ -195,11 +272,20 @@ class AccountTax(models.Model):
         # Calcula ICMS Interestadual (DIFAL)
         specific_icms_inter = [tx for tx in result['taxes']
                                if tx['domain'] == 'icmsinter']
+
+        # Retira o ICMS próprio e calcula o ICMS de Destino na BC
+        total_base_difal = 0.00
+
+        if specific_icms_inter:
+            total_base_difal = round(
+                (total_base) / 
+                (1 -  specific_icms_inter[0]['percent']), precision)
+
         result_icms_inter = self._compute_tax(
             cr,
             uid,
             specific_icms_inter,
-            total_base,
+            total_base_difal,
             product,
             quantity,
             precision,
@@ -207,13 +293,16 @@ class AccountTax(models.Model):
 
         if (specific_icms_inter and fiscal_position and
                 partner.partner_fiscal_type_id.ind_ie_dest == '9'):
-            if fiscal_position.cfop_id.id_dest == '2':
+            if id_dest == '2':
+
+                icms_value_difal = round(total_base_difal *
+                    specific_icms[0]['amount'], precision)
 
                 # Calcula o DIFAL total
                 result_icms_inter['taxes'][0]['amount'] = round(
-                    abs(specific_icms_inter[0]['amount'] -
-                        icms_value), precision
-                )
+                    abs((total_base_difal * specific_icms[0]['percent']) -
+                    (total_base_difal * specific_icms_inter[0]['percent'])),
+                    precision)
 
                 # Cria uma chave com o ICMS de intraestadual
                 result_icms_inter['taxes'][0]['icms_origin_percent'] = \
@@ -256,25 +345,59 @@ class AccountTax(models.Model):
         # Calcula ICMS ST
         specific_icmsst = [tx for tx in result['taxes']
                            if tx['domain'] == 'icmsst']
+
+        icms_st_prebase = result['total']
+        if specific_icmsst:
+            if specific_icmsst[0].get('icms_st_discount_included'):
+                p = price_unit_gross or price_unit
+                icms_st_prebase = round(quantity * p, precision)
+
         result_icmsst = self._compute_tax(cr, uid, specific_icmsst,
-                                          result['total'], product,
+                                          icms_st_prebase, product,
                                           quantity, precision, base_tax)
+
+
         totaldc += result_icmsst['tax_discount']
         if result_icmsst['taxes']:
             icms_st_percent = result_icmsst['taxes'][0]['percent']
             icms_st_percent_reduction = result_icmsst[
                 'taxes'][0]['base_reduction']
-            icms_st_base = round(((result['total'] + ipi_value) *
-                                 (1 - icms_st_percent_reduction)) *
-                                 (1 + result_icmsst['taxes'][0]['amount_mva']),
-                                 precision)
-            icms_st_base_other = round(
-                ((result['total'] + ipi_value) * (
-                    1 + result_icmsst['taxes'][0]['amount_mva'])),
-                precision) - icms_st_base
+            if not result_icmsst['taxes'][0]['icms_st_by_percent']:
+
+                icms_st_base = round(((icms_st_prebase + ipi_value) *
+                                     (1 - icms_st_percent_reduction)) *
+                                     (1 + result_icmsst['taxes'][0]['amount_mva']),
+                                     precision)
+                icms_st_base_other = round(
+                    ((icms_st_prebase + ipi_value) * (
+                        1 + result_icmsst['taxes'][0]['amount_mva'])),
+                    precision) - icms_st_base
+                icms_st_value = round(
+                    (icms_st_base * icms_st_percent) - icms_value, precision)
+                if (result_icmsst['taxes'][0]['icms_st_perc_limit']
+                        and icms_st_value < 0):
+                    icms_value_limit = round(
+                        result_icms['taxes'][0]['total_base']
+                        * result_icmsst['taxes'][0]['icms_st_perc_limit'],
+                        precision)
+                    icms_st_value = round(
+                        (icms_st_base * icms_st_percent) - icms_value_limit,
+                         precision)
+
+            if result_icmsst['taxes'][0]['icms_st_by_percent']:
+                total_base_st = (total_base + ipi_value)
+
+                icms_st_value = round(total_base_st *
+                                      result_icmsst['taxes'][0]['amount_mva'],
+                                      precision)
+
+                icms_st_base = round((icms_st_value + icms_value) /
+                                       icms_st_percent, precision)
+
+                icms_st_base_other = 0.00
+
             result_icmsst['taxes'][0]['total_base'] = icms_st_base
-            result_icmsst['taxes'][0]['amount'] = round(
-                (icms_st_base * icms_st_percent) - icms_value, precision)
+            result_icmsst['taxes'][0]['amount'] = icms_st_value
             result_icmsst['taxes'][0]['icms_st_percent'] = icms_st_percent
             result_icmsst['taxes'][0][
                 'icms_st_percent_reduction'] = icms_st_percent_reduction
@@ -306,11 +429,15 @@ class AccountTax(models.Model):
     def compute_all(self, price_unit, quantity, product=None, partner=None,
                     force_excluded=False, fiscal_position=False,
                     insurance_value=0.0, freight_value=0.0,
-                    other_costs_value=0.0, base_tax=0.00):
+                    other_costs_value=0.0, base_tax=0.00,
+                    price_unit_gross=0.0):
         return self._model.compute_all(
             self._cr, self._uid, self, price_unit, quantity,
             product=product, partner=partner,
             force_excluded=force_excluded,
-            fiscal_position=fiscal_position, insurance_value=insurance_value,
-            freight_value=freight_value, other_costs_value=other_costs_value,
-            base_tax=base_tax)
+            fiscal_position=fiscal_position,
+            insurance_value=insurance_value,
+            freight_value=freight_value,
+            other_costs_value=other_costs_value,
+            base_tax=base_tax,
+            price_unit_gross=price_unit_gross)
