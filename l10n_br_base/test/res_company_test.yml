@@ -1,5 +1,5 @@
 -
-    Company with valid CNPJ and Iscrição Estadual
+    Company with valid CNPJ and Iscrição Estadl
 -
   !python {model: res.company}: |
     from openerp.exceptions import ValidationError

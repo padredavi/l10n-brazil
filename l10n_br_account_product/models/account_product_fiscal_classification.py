@@ -319,6 +319,7 @@ class AccountProductFiscalClassification(models.Model):
                 ncm.get_ibpt()
             except:
                 pass
+
     @api.multi
     def write(self, vals):
         res = super(AccountProductFiscalClassification, self).write(vals)

@@ -64,7 +64,6 @@ class AccountTax(models.Model):
         default=False
     )
 
-
     def _compute_tax(self, cr, uid, taxes, total_line, product, product_qty,
                      precision, base_tax=0.0):
         result = {'tax_discount': 0.0, 'taxes': []}
@@ -278,8 +277,8 @@ class AccountTax(models.Model):
 
         if specific_icms_inter:
             total_base_difal = round(
-                (total_base) / 
-                (1 -  specific_icms_inter[0]['percent']), precision)
+                (total_base) /
+                (1 - specific_icms_inter[0]['percent']), precision)
 
         result_icms_inter = self._compute_tax(
             cr,
@@ -295,13 +294,12 @@ class AccountTax(models.Model):
                 partner.partner_fiscal_type_id.ind_ie_dest == '9'):
             if id_dest == '2':
 
-                icms_value_difal = round(total_base_difal *
-                    specific_icms[0]['amount'], precision)
-
                 # Calcula o DIFAL total
                 result_icms_inter['taxes'][0]['amount'] = round(
-                    abs((total_base_difal * specific_icms[0]['percent']) -
-                    (total_base_difal * specific_icms_inter[0]['percent'])),
+                    abs((total_base_difal *
+                         specific_icms[0]['percent']) -
+                        (total_base_difal *
+                         specific_icms_inter[0]['percent'])),
                     precision)
 
                 # Cria uma chave com o ICMS de intraestadual
@@ -356,7 +354,6 @@ class AccountTax(models.Model):
                                           icms_st_prebase, product,
                                           quantity, precision, base_tax)
 
-
         totaldc += result_icmsst['tax_discount']
         if result_icmsst['taxes']:
             icms_st_percent = result_icmsst['taxes'][0]['percent']
@@ -364,10 +361,11 @@ class AccountTax(models.Model):
                 'taxes'][0]['base_reduction']
             if not result_icmsst['taxes'][0]['icms_st_by_percent']:
 
-                icms_st_base = round(((icms_st_prebase + ipi_value) *
-                                     (1 - icms_st_percent_reduction)) *
-                                     (1 + result_icmsst['taxes'][0]['amount_mva']),
-                                     precision)
+                icms_st_base = round(
+                    ((icms_st_prebase + ipi_value) *
+                     (1 - icms_st_percent_reduction)) *
+                    (1 + result_icmsst['taxes'][0]['amount_mva']),
+                    precision)
                 icms_st_base_other = round(
                     ((icms_st_prebase + ipi_value) * (
                         1 + result_icmsst['taxes'][0]['amount_mva'])),
@@ -382,7 +380,7 @@ class AccountTax(models.Model):
                         precision)
                     icms_st_value = round(
                         (icms_st_base * icms_st_percent) - icms_value_limit,
-                         precision)
+                        precision)
 
             if result_icmsst['taxes'][0]['icms_st_by_percent']:
                 total_base_st = (total_base + ipi_value)
@@ -392,7 +390,7 @@ class AccountTax(models.Model):
                                       precision)
 
                 icms_st_base = round((icms_st_value + icms_value) /
-                                       icms_st_percent, precision)
+                                     icms_st_percent, precision)
 
                 icms_st_base_other = 0.00
 

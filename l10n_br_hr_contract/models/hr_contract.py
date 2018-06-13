@@ -2,7 +2,7 @@
 # Copyright (C) 2016  Daniel Sadamo - KMEE Informática
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from openerp import models, fields, api
+from openerp import models, fields, api, _
 from openerp.addons.l10n_br_base.tools import fiscal
 from openerp.exceptions import ValidationError
 
@@ -166,4 +166,4 @@ class HrContract(models.Model):
         for record in self:
             if record.union_cnpj:
                 if not fiscal.validate_cnpj(record.union_cnpj):
-                    raise ValidationError("Invalid union CNPJ!")
+                    raise ValidationError(_("Invalid union CNPJ!"))

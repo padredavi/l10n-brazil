@@ -309,10 +309,10 @@ class NFe200(FiscalDocument):
             self.nfe.infNFe.dest.xNome.valor = (
                 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL')
         else:
-            self.nfe.infNFe.dest.xNome.valor = (normalize(
-            'NFKD', unicode(
-                    invoice.partner_id.legal_name[:60] or '')
-            ).encode('ASCII', 'ignore'))
+            self.nfe.infNFe.dest.xNome.valor = (
+                normalize(
+                    'NFKD', unicode(invoice.partner_id.legal_name[:60] or '')
+                ).encode('ASCII', 'ignore'))
 
             if invoice.partner_id.is_company:
                 self.nfe.infNFe.dest.IE.valor = punctuation_rm(
@@ -340,9 +340,10 @@ class NFe200(FiscalDocument):
         self.nfe.infNFe.dest.enderDest.xCpl.valor = (normalize(
             'NFKD', unicode(
                 invoice.partner_id.street2 or '')).encode('ASCII', 'ignore'))
-        self.nfe.infNFe.dest.enderDest.xBairro.valor = (normalize(
-            'NFKD', unicode(
-                invoice.partner_id.district or 'Sem Bairro')).encode('ASCII', 'ignore'))
+        self.nfe.infNFe.dest.enderDest.xBairro.valor = (
+            normalize('NFKD', unicode(
+                invoice.partner_id.district or 'Sem Bairro')).encode(
+                    'ASCII', 'ignore'))
         self.nfe.infNFe.dest.enderDest.cMun.valor = address_invoice_city_code
         self.nfe.infNFe.dest.enderDest.xMun.valor = address_invoice_city
         self.nfe.infNFe.dest.enderDest.UF.valor = address_invoice_state_code
@@ -363,16 +364,18 @@ class NFe200(FiscalDocument):
             self.det.prod.cProd.valor = invoice_line.product_id.code or ''
             self.det.prod.cEAN.valor = invoice_line.product_id.ean13 or ''
             self.det.prod.cEANTrib.valor = invoice_line.product_id.ean13 or ''
-            self.det.prod.xProd.valor = (normalize(
-            'NFKD', unicode(
-                    invoice_line.product_id.name[:120] or '')
-            ).encode('ASCII', 'ignore'))
+            self.det.prod.xProd.valor = (
+                normalize(
+                    'NFKD', unicode(
+                        invoice_line.product_id.name[:120] or '')
+                    ).encode('ASCII', 'ignore'))
         else:
             self.det.prod.cProd.valor = invoice_line.code or ''
-            self.det.prod.xProd.valor = (normalize(
-            'NFKD', unicode(
-                    invoice_line.name[:120] or '')
-            ).encode('ASCII', 'ignore'))
+            self.det.prod.xProd.valor = (
+                normalize(
+                    'NFKD', unicode(
+                        invoice_line.name[:120] or '')
+                ).encode('ASCII', 'ignore'))
 
         self.det.prod.cEAN.valor = (
             invoice_line.uos_ean

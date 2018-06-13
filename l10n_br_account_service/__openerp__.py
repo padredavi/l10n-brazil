@@ -14,6 +14,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/l10n_br_account_service_security.xml',
         'data/l10n_br_account_service_data.xml',
         'views/product_view.xml',
         'views/l10n_br_account_view.xml',

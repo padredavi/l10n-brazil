@@ -3,8 +3,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from openerp import models, fields, api
-from openerp.addons.l10n_br_account_product.models.product import \
-    PRODUCT_ORIGIN
+from .product import PRODUCT_ORIGIN
 
 
 class AccountFiscalPositionTemplate(models.Model):

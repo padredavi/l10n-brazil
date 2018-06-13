@@ -87,6 +87,7 @@ class ResCompany(models.Model):
         default='invoice_creation_date'
     )
 
+
 class L10nBrTaxDefinitionCompanyProduct(L10nBrTaxDefinition, models.Model):
     _name = 'l10n_br_tax.definition.company.product'
 

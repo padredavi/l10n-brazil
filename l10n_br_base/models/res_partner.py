@@ -7,7 +7,7 @@
 import re
 
 from openerp import models, fields, api
-from openerp.addons.l10n_br_base.tools import fiscal
+from ..tools import fiscal
 from openerp.exceptions import ValidationError
 
 
@@ -120,7 +120,6 @@ class ResPartner(models.Model):
                     raise ValidationError(
                         u'Já existe um parceiro cadastrado com '
                         u'esta Inscrição Estadual !')
-
 
     @api.multi
     @api.constrains('cnpj_cpf', 'country_id')

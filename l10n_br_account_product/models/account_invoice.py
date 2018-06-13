@@ -59,12 +59,12 @@ class AccountInvoice(models.Model):
         self.amount_tax_discount = 0.0
         self.amount_untaxed = sum(
             line.price_subtotal for line in self.invoice_line)
-        self.amount_tax = sum(tax.amount
-                              for tax in self.tax_line
-                              if not tax.tax_code_id.tax_discount)
-        self.tax_amount_retention = sum(tax.amount
-                              for tax in self.tax_line
-                              if tax.tax_code_id.retention)
+        self.amount_tax = sum(
+            tax.amount for tax in self.tax_line
+            if not tax.tax_code_id.tax_discount)
+        self.tax_amount_retention = sum(
+            tax.amount for tax in self.tax_line
+            if tax.tax_code_id.retention)
         self.amount_total = (self.amount_tax + self.amount_untaxed -
                              self.tax_amount_retention)
 
@@ -392,10 +392,10 @@ class AccountInvoice(models.Model):
         string='Outros Custos', store=True,
         digits=dp.get_precision('Account'), compute='_compute_amount')
     tax_amount_retention = fields.Float(
-            string='Total de Retenções',
-            store=True,
-            digits=dp.get_precision('Account'),
-            compute='_compute_amount')
+        string='Total de Retenções',
+        store=True,
+        digits=dp.get_precision('Account'),
+        compute='_compute_amount')
     amount_total_taxes = fields.Float(
         string='Total de Tributos',
         store=True,
@@ -527,10 +527,11 @@ class AccountInvoice(models.Model):
                     invoice.document_serie_id.internal_sequence_id.id)
                 invalid_number = self.env[
                     'l10n_br_account.invoice.invalid.number'].search(
-                    [('number_start', '<=', sequence.number_next),
-                     ('number_end', '>=', sequence.number_next),
-                     ('document_serie_id', '=', invoice.document_serie_id.id),
-                     ('state', '=', 'done')])
+                        [('number_start', '<=', sequence.number_next),
+                         ('number_end', '>=', sequence.number_next),
+                         ('document_serie_id', '=',
+                          invoice.document_serie_id.id),
+                         ('state', '=', 'done')])
 
                 if invalid_number:
                     raise UserError(
@@ -545,13 +546,15 @@ class AccountInvoice(models.Model):
                                      fields.datetime.now())
                 date_in_out = invoice.date_in_out or fields.datetime.now()
 
-                values = {'internal_number': seq_number,
+                values = {
+                    'internal_number': seq_number,
                     'number': seq_number,
                     'date_hour_invoice': date_time_invoice,
                     'date_in_out': date_in_out}
             else:
                 seq_number = invoice.internal_number
-                values = {'internal_number': seq_number,
+                values = {
+                    'internal_number': seq_number,
                     'number': seq_number}
 
             self.write(values)

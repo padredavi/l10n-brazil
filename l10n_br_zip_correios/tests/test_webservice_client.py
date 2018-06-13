@@ -9,8 +9,7 @@ from suds.client import TransportError
 from openerp.tests.common import TransactionCase
 from openerp.exceptions import Warning as UserError
 
-from openerp.addons.l10n_br_zip_correios.models.webservice_client\
-    import WebServiceClient
+from ..models.webservice_client import WebServiceClient
 
 
 class TestWebServiceClient(TransactionCase):

@@ -4,11 +4,11 @@
 
 from openerp import models
 
+
 class SaleMakeInvoice(models.TransientModel):
     _inherit = "sale.make.invoice"
 
     def make_invoices(self, cr, uid, ids, context=None):
-        
         order_obj = self.pool.get('sale.order')
         if context is None:
             context = {}

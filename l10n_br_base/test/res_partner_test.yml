@@ -1,5 +1,5 @@
 -
-    Partner with valid CNPJ and Iscrição Estadual
+    Partner with valid CNPJ and Iscrição Estadl
 -
   !python {model: res.partner}: |
     from openerp.exceptions import ValidationError
