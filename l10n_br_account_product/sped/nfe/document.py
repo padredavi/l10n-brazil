@@ -2,6 +2,8 @@
 # Copyright (C) 2013  Renato Lima - Akretion
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
+from __future__ import division, print_function, unicode_literals
+
 from datetime import datetime
 from unicodedata import normalize
 
@@ -79,13 +81,6 @@ class NFe200(FiscalDocument):
                 self._carrier_data(invoice)
             except AttributeError:
                 pass
-
-            self.pag = self._get_Pag()
-            self._details_pag(invoice)
-
-            self.detPag = self._get_DetPag()
-            self._details_pag_data(invoice)
-            self.nfe.infNFe.pag.detPag.append(self.detPag)
 
             self.vol = self._get_Vol()
             self._weight_data(invoice)
@@ -345,7 +340,9 @@ class NFe200(FiscalDocument):
                 invoice.partner_id.district or 'Sem Bairro')).encode(
                     'ASCII', 'ignore'))
         self.nfe.infNFe.dest.enderDest.cMun.valor = address_invoice_city_code
-        self.nfe.infNFe.dest.enderDest.xMun.valor = address_invoice_city
+        self.nfe.infNFe.dest.enderDest.xMun.valor = normalize(
+                    'NFKD', unicode(address_invoice_city or '')
+                    ).encode('ASCII', 'ignore')
         self.nfe.infNFe.dest.enderDest.UF.valor = address_invoice_state_code
         self.nfe.infNFe.dest.enderDest.CEP.valor = partner_cep
         self.nfe.infNFe.dest.enderDest.cPais.valor = partner_bc_code
@@ -607,8 +604,11 @@ class NFe200(FiscalDocument):
                 (invoice.carrier_id.partner_id.street or '') + ', ' +
                 (invoice.carrier_id.partner_id.number or '') + ', ' +
                 (invoice.carrier_id.partner_id.district or ''))[:60]
-            self.nfe.infNFe.transp.transporta.xMun.valor = (
-                invoice.carrier_id.partner_id.l10n_br_city_id.name or '')
+            self.nfe.infNFe.transp.transporta.xMun.valor = normalize(
+                'NFKD', unicode(
+                    invoice.carrier_id.partner_id.l10n_br_city_id.name or '')
+                 ).encode('ASCII', 'ignore')
+
             self.nfe.infNFe.transp.transporta.UF.valor = (
                 invoice.carrier_id.partner_id.state_id.code or '')
 
@@ -870,6 +870,85 @@ class NFe400(NFe310):
     def __init__(self):
         super(NFe400, self).__init__()
 
+    def _serializer(self, cr, uid, ids, nfe_environment, context=None):
+        pool = pooler.get_pool(cr.dbname)
+        nfes = []
+
+        if not context:
+            context = {'lang': 'pt_BR'}
+
+        for invoice in pool.get('account.invoice').browse(cr, uid, ids,
+                                                          context):
+
+            company = pool.get('res.partner').browse(
+                cr, uid, invoice.company_id.partner_id.id, context)
+
+            self.nfe = self.get_NFe()
+
+            self._nfe_identification(invoice, company, nfe_environment)
+
+            self._in_out_adress(invoice)
+
+            for inv_related in invoice.fiscal_document_related_ids:
+                self.nfref = self._get_NFRef()
+                self._nfe_references(inv_related)
+                self.nfe.infNFe.ide.NFref.append(self.nfref)
+
+            self._emmiter(invoice, company)
+            self._receiver(invoice, company, nfe_environment)
+
+            i = 0
+            for inv_line in invoice.invoice_line:
+                i += 1
+                self.det = self._get_Det()
+                self._details(invoice, inv_line, i)
+
+                for inv_di in inv_line.import_declaration_ids:
+
+                    self.di = self._get_DI()
+                    self._di(inv_di)
+
+                    for inv_di_line in inv_di.line_ids:
+                        self.di_line = self._get_Addition()
+                        self._addition(inv_di_line)
+                        self.di.adi.append(self.di_line)
+
+                    self.det.prod.DI.append(self.di)
+
+                self.nfe.infNFe.det.append(self.det)
+
+            if invoice.journal_id.revenue_expense:
+                for move_line in invoice.move_line_receivable_id:
+                    self.dup = self._get_Dup()
+                    self._encashment_data(invoice, move_line)
+                    self.nfe.infNFe.cobr.dup.append(self.dup)
+
+            try:
+                self._carrier_data(invoice)
+            except AttributeError:
+                pass
+
+            self.pag = self._get_Pag()
+            self._details_pag(invoice)
+
+            self.detPag = self._get_DetPag()
+            self._details_pag_data(invoice)
+            self.nfe.infNFe.pag.detPag.append(self.detPag)
+
+            self.vol = self._get_Vol()
+            self._weight_data(invoice)
+            self.nfe.infNFe.transp.vol.append(self.vol)
+
+            self._additional_information(invoice)
+            self._total(invoice)
+            self._export(invoice)
+
+            # Gera Chave da NFe
+            self.nfe.gera_nova_chave()
+            nfes.append(self.nfe)
+
+        return nfes
+ 
     def _details_pag(self, invoice):
         # TODO - implementar campo
         self.pag.vTroco.valor = ''
