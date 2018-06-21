@@ -35,6 +35,7 @@
           <field name="arch" type="xml">
             <field position="after" name="tax_discount">
                 <field name="retention"/>
+		<field name="retention_account_id"/>
                 <field name="partner_id"/>
                 <field name="due_day"/>
               </field>

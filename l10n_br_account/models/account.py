@@ -27,6 +27,10 @@ class AccountTaxCode(models.Model):
         comodel_name='res.partner',
         string=u'Parceiro'
     )
+    retention_account_id = fields.Many2one(
+        comodel_name='account.account',
+        string=u'Parceiro'
+    )
     due_day = fields.Integer(
         string=u'Dia do Mês'
     )

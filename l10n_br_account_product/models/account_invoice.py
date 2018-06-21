@@ -735,8 +735,10 @@ class AccountInvoice(models.Model):
                         'amount_currency': 0,
                         'product_uom_id': 1,
                         'partner_id': False,
-                        'account_id': (tax.account_id.id or
-                                       invoice.account_id.id)
+                        'account_id': (
+                            tax.tax_code_id.retention_account_id.id or
+                            tax.account_id.id or
+                            invoice.account_id.id)
                     }
 
                     if tax.tax_code_id.partner_id:
