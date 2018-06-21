@@ -238,8 +238,8 @@
             <field name="view_type">form</field>
             <field name="view_mode">tree,form,calendar,graph</field>
             <field eval="False" name="view_id"/>
-            <field name="domain">[('type','=','out_invoice'), ('fiscal_type', '=', 'service'), ('fiscal_document_code', '=', 'XX')]</field>
-            <field name="context">{'default_type':'out_invoice', 'type':'out_invoice', 'journal_type': 'sale', 'fiscal_document_code': 'XX', 'fiscal_type': 'service'}</field>
+            <field name="domain">[('fiscal_document_code', '=', 'XX')]</field>
+            <field name="context">{'default_type':'in_invoice', 'type':'in_invoice', 'journal_type': 'purchase', 'fiscal_document_code': 'XX'}</field>
             <field name="search_view_id" ref="l10n_br_account_service_nfse_search"/>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
