@@ -260,17 +260,17 @@ class AccountTax(models.Model):
         if result_icms['taxes']:
             icms_value = result_icms['taxes'][0]['amount']
 
-        # Calcula a FCP
-        specific_fcp = [tx for tx in result['taxes']
-                        if tx['domain'] == 'icmsfcp']
-        result_fcp = self._compute_tax(cr, uid, specific_fcp, total_base,
-                                       product, quantity, precision, base_tax)
-        totaldc += result_fcp['tax_discount']
-        calculed_taxes += result_fcp['taxes']
-
         # Calcula ICMS Interestadual (DIFAL)
         specific_icms_inter = [tx for tx in result['taxes']
                                if tx['domain'] == 'icmsinter']
+
+        # Calcula a FCP
+        specific_fcp = [tx for tx in result['taxes']
+                        if tx['domain'] == 'icmsfcp']
+
+        fcp_percent = 0.00
+        if specific_fcp:
+            fcp_percent = specific_fcp[0]['percent']
 
         # Retira o ICMS próprio e calcula o ICMS de Destino na BC
         total_base_difal = 0.00
@@ -278,7 +278,13 @@ class AccountTax(models.Model):
         if specific_icms_inter:
             total_base_difal = round(
                 (total_base) /
-                (1 - specific_icms_inter[0]['percent']), precision)
+                (1 - (specific_icms_inter[0]['percent'] + fcp_percent)),
+                precision)
+
+        result_fcp = self._compute_tax(cr, uid, specific_fcp, total_base_difal,
+                                       product, quantity, precision, base_tax)
+        totaldc += result_fcp['tax_discount']
+        calculed_taxes += result_fcp['taxes']
 
         result_icms_inter = self._compute_tax(
             cr,
